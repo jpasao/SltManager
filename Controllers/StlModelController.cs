@@ -10,7 +10,7 @@ namespace stl.Controllers;
 [Route("[controller]")]
 public class StlModelController : ControllerBase
 {
-    public RepositoryBase repository;
+    private readonly RepositoryBase repository;
 
     public StlModelController(IOptions<ConnectionString> connectionString)
     {
@@ -21,6 +21,25 @@ public class StlModelController : ControllerBase
     public async Task<IEnumerable<StlModel>> Get(StlModel model)
     {
         return await repository.SearchModel(model);
+    }
+
+    [HttpPost("Post")]
+    public async Task<int> Post(StlModel model)
+    {
+        return await repository.SaveModel(model);
+    }
+
+    
+    [HttpPut]
+    public async Task<int> Put(StlModel model)
+    {
+        return await repository.SaveModel(model);
+    }
+
+    [HttpDelete]
+    public async Task<int> Delete(int id)
+    {
+        return await repository.DeleteModel(id);
     }
 }
 

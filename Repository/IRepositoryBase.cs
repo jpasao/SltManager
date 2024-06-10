@@ -10,7 +10,7 @@ internal interface IRepositoryBase
 
     Task<int> SavePatreon(Patreon patreon);
 
-    Task<int> DeletePatreon(Patreon patreon);
+    Task<int> DeletePatreon(int id);
 
     #endregion
 
@@ -19,7 +19,7 @@ internal interface IRepositoryBase
     
     Task<int> SaveModel(StlModel model);
 
-    Task<int> DeleteModel(StlModel model); 
+    Task<int> DeleteModel(int id); 
 
     #endregion
 
@@ -29,7 +29,7 @@ internal interface IRepositoryBase
 
     Task<int> SaveTag(Tag tag);
 
-    Task<int> DeleteTag(Tag tag);
+    Task<int> DeleteTag(int id);
 
     #endregion
 }
