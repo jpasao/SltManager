@@ -10,7 +10,7 @@ namespace stl.Controllers;
 [Route("[controller]")]
 public class PatreonController : ControllerBase
 {
-    public RepositoryBase repository;
+    private readonly RepositoryBase repository;
 
     public PatreonController(IOptions<ConnectionString> connectionString)
     {
@@ -36,8 +36,8 @@ public class PatreonController : ControllerBase
     }
 
     [HttpDelete]
-    public async Task<int> Delete(Patreon patreon)
+    public async Task<int> Delete(int id)
     {
-        return await repository.DeletePatreon(patreon);
+        return await repository.DeletePatreon(id);
     }
 }
