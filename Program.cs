@@ -31,12 +31,12 @@ app.Use((context, next) =>
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-app.Urls.Add("http://localhost:5002");
+app.Urls.Add("http://localhost:5003");
 
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller}/{action=Index}/{id?}");
+    pattern: "{controller}/{action=Index}/{id?}/{idPhoto?}");
 
 app.MapFallbackToFile("index.html");
 

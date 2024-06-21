@@ -18,7 +18,7 @@ public class StlModel
 
   public byte Month { get; set; }
 
-  public string? Photo { get; set; }
+  public List<Photo>? Image { get; set; }
 
   public string? Path { get; set; } 
 }

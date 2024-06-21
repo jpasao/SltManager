@@ -31,7 +31,7 @@ public class RepositoryBase : IRepositoryBase
 
             return (await db.QueryAsync<Patreon>(sql, patreon).ConfigureAwait(false)).AsList();            
         }
-        catch (System.Exception)
+        catch (Exception)
         {
             return null;
         }
@@ -47,7 +47,7 @@ public class RepositoryBase : IRepositoryBase
 
             return await db.ExecuteAsync(sql, patreon).ConfigureAwait(false);            
         }
-        catch (System.Exception)
+        catch (Exception)
         {
             return -1;
         }
@@ -61,7 +61,7 @@ public class RepositoryBase : IRepositoryBase
 
             return await db.ExecuteAsync(sql, new { IdPatreon = id }).ConfigureAwait(false);
         }
-        catch (System.Exception)
+        catch (Exception)
         {
             return -1;
         }
@@ -80,16 +80,18 @@ public class RepositoryBase : IRepositoryBase
                     M.ModelName, 
                     M.Year, 
                     M.Month, 
-                    M.Photo, 
                     M.Path,
                     P.IdPatreon,
                     P.PatreonName,
                     T.IdTag, 
-                    T.TagName
+                    T.TagName,
+                    MP.IdPhoto,
+                    MP.Image
                 FROM models M
                     INNER JOIN patreons P ON M.IdPatreon = P.IdPatreon
                     INNER JOIN modeltags MT ON MT.IdModel = M.IdModel
-                    INNER JOIN tags T ON T.IdTag = MT.IdTag 
+                    INNER JOIN tags T ON T.IdTag = MT.IdTag
+                    LEFT JOIN photos MP ON MP.IdModel = M.IdModel
                 WHERE (@IdPatreon = 0 OR M.IdPatreon = @IdPatreon) AND
                     (@IdTag = 0 OR T.IdTag = @IdTag) AND
                     (@ModelName = '' OR M.ModelName LIKE CONCAT('%', @ModelName, '%')) AND
@@ -97,12 +99,13 @@ public class RepositoryBase : IRepositoryBase
                     (@Month = 0 OR M.Month = @Month)
                 ORDER BY M.ModelName";
 
-            var models = await db.QueryAsync<StlModel, Patreon, Tag, StlModel>(sql, 
-                (model, patreon, tag) => {
+            var models = await db.QueryAsync<StlModel, Patreon, Tag, Photo, StlModel>(sql, 
+                (model, patreon, tag, photo) => {
                     model.Patreon = patreon;
                     model.Tag = new List<Tag>{ tag };
+                    model.Image = new List<Photo>{ photo };
                     return model;
-                }, splitOn: "IdPatreon, IdTag", 
+                }, splitOn: "IdPatreon, IdTag, IdPhoto", 
                 param: new {
                     model.Patreon.IdPatreon,
                     model.Tag.FirstOrDefault().IdTag,
@@ -115,12 +118,13 @@ public class RepositoryBase : IRepositoryBase
             {
                 var groupedModel = g.First();
                 groupedModel.Tag = g.Select(p => p.Tag.Single()).ToList();
+                groupedModel.Image = g.Select(p => p.Image.SingleOrDefault()).ToList();
                 return groupedModel;
             });
 
             return results.AsList();            
         }
-        catch (System.Exception)
+        catch (Exception)
         {
             return null;
         }
@@ -133,8 +137,8 @@ public class RepositoryBase : IRepositoryBase
             bool isNewModel = model.IdModel == 0;
             int modelSave = 0, modelTagDelete = 0, modelTagInsert = 0, modelId = 0;
             var sql = isNewModel ? 
-                "INSERT INTO models (IdPatreon, ModelName, Year, Month, Photo, Path) VALUES (@IdPatreon, @ModelName, @Year, @Month, @Photo, @Path); SELECT LAST_INSERT_ID()" :
-                "UPDATE models SET IdPatreon = @IdPatreon, ModelName = @ModelName, Year = @Year, Month = @Month, Photo = @Photo, Path = @Path WHERE IdModel = @IdModel";
+                "INSERT INTO models (IdPatreon, ModelName, Year, Month, Path) VALUES (@IdPatreon, @ModelName, @Year, @Month, @Path); SELECT LAST_INSERT_ID()" :
+                "UPDATE models SET IdPatreon = @IdPatreon, ModelName = @ModelName, Year = @Year, Month = @Month, Path = @Path WHERE IdModel = @IdModel";
             modelSave = await db.ExecuteScalarAsync<int>(sql, 
                 new 
                 {
@@ -142,10 +146,11 @@ public class RepositoryBase : IRepositoryBase
                     model.Patreon.IdPatreon,
                     model.ModelName,
                     model.Year,
-                    model.Month,
-                    model.Photo,
+                    model.Month,                    
                     model.Path
                 }).ConfigureAwait(false);
+
+            modelId = isNewModel ? modelSave : model.IdModel;
 
             if (modelSave > 0 && model.Tag != null && model.Tag.Count > 0) 
             {
@@ -153,12 +158,8 @@ public class RepositoryBase : IRepositoryBase
                 {
                     sql = "DELETE FROM modeltags WHERE IdModel = @IdModel";
                     modelTagDelete = await db.ExecuteAsync(sql, model).ConfigureAwait(false);
-                    modelId = model.IdModel;
                 }
-                else 
-                {
-                    modelId = modelSave;
-                }
+
                 sql = "INSERT INTO modeltags (IdTag, IdModel) VALUES (@IdTag, @IdModel)";
                 model.Tag.ForEach(async tag => {
                     modelTagInsert = await db.ExecuteAsync(sql, 
@@ -169,9 +170,62 @@ public class RepositoryBase : IRepositoryBase
                         }).ConfigureAwait(false);  
                 }); 
             }
+
             return modelSave + modelTagDelete + modelTagInsert;
         }
-        catch (System.Exception)
+        catch (Exception)
+        {
+            return -1;
+        }
+    }
+ 
+    public async Task<int> SavePhotos(int idModel, int idPhoto, bool isUpdate, IFormFile photo)
+    {
+        try
+        {
+            if (photo == null || photo.Length == 0) 
+            {
+                return 0;
+            }
+            byte[]? photoBytes = null;
+
+            using (var photoFileStream = photo.OpenReadStream())
+            using (var photoMemoryStream = new MemoryStream())
+            {
+                await photoFileStream.CopyToAsync(photoMemoryStream);
+                photoBytes = photoMemoryStream.ToArray();
+            }
+
+            DynamicParameters parameters = new DynamicParameters();
+            parameters.Add("@IdModel", idModel);
+            parameters.Add("@IdPhoto", idPhoto);
+            parameters.Add("@Photo", photoBytes, DbType.Binary, ParameterDirection.Input);
+            
+            string sql = isUpdate ? 
+                "UPDATE photos SET Image = @Photo, IdModel = @IdModel WHERE IdPhoto = @IdPhoto" :
+                "INSERT INTO photos (IdModel, Image) VALUES (@IdModel, @Photo)";
+            int photoSaving = await db.ExecuteAsync(sql, parameters).ConfigureAwait(false);
+
+            return photoSaving;
+        }
+        catch (Exception)
+        {
+            return -1;
+        }
+    }
+
+    private async Task<int> DeletePhotos(int idModel)
+    {
+        try
+        {
+            var sql = "DELETE FROM photos WHERE IdModel = @IdModel";
+            return await db.ExecuteAsync(sql, 
+            new 
+            { 
+                IdModel = idModel 
+            }).ConfigureAwait(false);            
+        }
+        catch (Exception)
         {
             return -1;
         }
@@ -181,10 +235,18 @@ public class RepositoryBase : IRepositoryBase
     {
         try
         {
+            int modelDelete = 0, modelPhotoDelete = 0;
             var sql = "DELETE FROM models WHERE IdModel = @idModel";
-            return await db.ExecuteAsync(sql, id).ConfigureAwait(false);            
+            modelDelete = await db.ExecuteAsync(sql, id).ConfigureAwait(false);
+
+            if (modelDelete > 0)
+            {
+                modelPhotoDelete = await DeletePhotos(id);
+            } 
+
+            return modelDelete + modelPhotoDelete;        
         }
-        catch (System.Exception)
+        catch (Exception)
         {
             return -1;
         }
@@ -205,7 +267,7 @@ public class RepositoryBase : IRepositoryBase
 
             return (await db.QueryAsync<Tag>(sql, tag).ConfigureAwait(false)).AsList();            
         }
-        catch (System.Exception)
+        catch (Exception)
         {
             return null;
         }
@@ -221,7 +283,7 @@ public class RepositoryBase : IRepositoryBase
 
             return await db.ExecuteAsync(sql, tag).ConfigureAwait(false);            
         }
-        catch (System.Exception)
+        catch (Exception)
         {
             return -1;
         }
@@ -235,7 +297,7 @@ public class RepositoryBase : IRepositoryBase
 
             return await db.ExecuteAsync(sql, new { IdTag = id }).ConfigureAwait(false);
         }
-        catch (System.Exception)
+        catch (Exception)
         {
             return -1;
         }        
