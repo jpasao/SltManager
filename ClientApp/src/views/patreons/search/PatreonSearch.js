@@ -1,22 +1,94 @@
-import React from 'react'
-import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton } from '@coreui/react'
-import { useGetPatreons } from '../../../network/hooks/patreon'
+import React, { useState } from 'react'
+import {
+  CCard,
+  CCardBody,
+  CCardHeader,
+  CCol,
+  CRow,
+  CButton,
+  CFormInput,
+  CCollapse,
+  CTable,
+  CForm,
+} from '@coreui/react'
+import CIcon from '@coreui/icons-react'
+import { cilCaretTop, cilCaretBottom, cilPencil, cilTrash } from '@coreui/icons'
+import ModalWindow from '../../../components/ModalComponent'
+import { useGetPatreons, useDeletePatreon } from '../../../network/hooks/patreon'
+import { defaultPatreon, defaultDelete } from '../../../defaults/patreon'
+import { actionColumns } from '../../../defaults/global'
 
 const PatreonSearch = () => {
-  let patreonObject = { IdPatreon: 0, PatreonName: '' }
+  let patreonObject = defaultPatreon
+  let deleteObj = defaultDelete
+
   const { patreons, refreshPatreons, isLoading: isFetchingItems } = useGetPatreons(patreonObject)
+  const { deletePatreon } = useDeletePatreon()
+  const [visible, setVisible] = useState(true)
+  const [visibleDeleteModal, setVisibleDeleteModal] = useState(false)
+  const [name, setName] = useState('')
+  const [deleteData, setDeleteData] = useState(deleteObj)
 
   const isLoading = isFetchingItems
 
-  const handleSearch = (search = false) => {
-    if (search) {
-      refreshPatreons()
-    }
+  const handleName = (event) => setName(event.target.value)
+  const handleSearch = () => {
+    patreonObject.PatreonName = name
+    refreshPatreons()
   }
 
-  const sortedPatreons = patreons.length
-    ? patreons.sort((a, b) => a.patreonName - b.patreonName)
-    : []
+  const handleEdit = (id) => {
+    console.log(id)
+  }
+  const handleDelete = (id, name) => {
+    deleteObj.id = id
+    deleteObj.name = name
+    setDeleteData(deleteObj)
+    toggleDeleteModal(true)
+  }
+  const toggleDeleteModal = (visible) => {
+    setVisibleDeleteModal(visible)
+  }
+  const deleteElement = () => {
+    deletePatreon(deleteObj.id).then(() => refreshPatreons())
+    toggleDeleteModal(false)
+  }
+
+  const columns = [
+    {
+      key: 'name',
+      label: 'Nombre',
+      _props: { scope: 'col' },
+    },
+    ...actionColumns,
+  ]
+
+  const items = patreons.map((item) => {
+    return {
+      id: item.idPatreon,
+      name: item.patreonName,
+      actions: (
+        <>
+          <CButton
+            color="warning"
+            variant="ghost"
+            size="sm"
+            onClick={() => handleEdit(item.idPatreon)}
+          >
+            <CIcon icon={cilPencil} />
+          </CButton>
+          <CButton
+            color="danger"
+            variant="ghost"
+            size="sm"
+            onClick={() => handleDelete(item.idPatreon, item.patreonName)}
+          >
+            <CIcon icon={cilTrash} />
+          </CButton>
+        </>
+      ),
+    }
+  })
 
   return (
     <CRow>
@@ -24,11 +96,38 @@ const PatreonSearch = () => {
         <CCard className="mb-4">
           <CCardHeader>
             <strong>Filtros</strong>
+            <CButton
+              color="primary"
+              className="alignRight"
+              variant="ghost"
+              size="sm"
+              onClick={() => setVisible(!visible)}
+            >
+              <CIcon icon={visible ? cilCaretTop : cilCaretBottom} />
+            </CButton>
           </CCardHeader>
           <CCardBody>
-            <CButton color="primary" onClick={() => handleSearch(true)} disabled={isLoading}>
-              Buscar
-            </CButton>
+            <CForm noValidate onSubmit={handleSearch}>
+              <CCollapse visible={visible}>
+                <CFormInput
+                  type="text"
+                  id="patreonName"
+                  value={name}
+                  onChange={handleName}
+                  floatingClassName="mb-3"
+                  floatingLabel="Nombre"
+                  placeholder="Filtra los Patreon por nombre..."
+                />
+                <CButton
+                  color="primary"
+                  className="alignRight"
+                  onClick={handleSearch}
+                  disabled={isLoading}
+                >
+                  Buscar
+                </CButton>
+              </CCollapse>
+            </CForm>
           </CCardBody>
         </CCard>
         <CCard className="mb-4">
@@ -36,14 +135,16 @@ const PatreonSearch = () => {
             <strong>Resultados</strong>
           </CCardHeader>
           <CCardBody>
-            <ul>
-              {sortedPatreons.map((patreon) => (
-                <li key={patreon.idPatreon}>{patreon.patreonName}</li>
-              ))}
-            </ul>
+            <CTable striped bordered columns={columns} items={items} />
           </CCardBody>
         </CCard>
       </CCol>
+      <ModalWindow
+        data={deleteData}
+        handleDelete={deleteElement}
+        isOpen={visibleDeleteModal}
+        closeDeleteModal={toggleDeleteModal}
+      />
     </CRow>
   )
 }
