@@ -7,4 +7,14 @@ const actionColumns = [
   },
 ]
 
-export { actionColumns }
+const pages = ['models', 'patreons', 'tags']
+const routeNames = {}
+const actions = { search: 'search', save: 'save' }
+pages.map((page) => {
+  routeNames[page] = {
+    search: `/${page}/${actions.search}`,
+    save: `/${page}/${actions.save}`,
+  }
+})
+
+export { actionColumns, routeNames }

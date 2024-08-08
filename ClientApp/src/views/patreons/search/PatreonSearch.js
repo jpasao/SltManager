@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   CCard,
   CCardBody,
@@ -16,12 +17,13 @@ import { cilCaretTop, cilCaretBottom, cilPencil, cilTrash } from '@coreui/icons'
 import ModalWindow from '../../../components/ModalComponent'
 import { useGetPatreons, useDeletePatreon } from '../../../network/hooks/patreon'
 import { defaultPatreon, defaultDelete } from '../../../defaults/patreon'
-import { actionColumns } from '../../../defaults/global'
+import { actionColumns, routeNames } from '../../../defaults/global'
 
 const PatreonSearch = () => {
   let patreonObject = defaultPatreon
   let deleteObj = defaultDelete
 
+  const navigateTo = useNavigate()
   const { patreons, refreshPatreons, isLoading: isFetchingItems } = useGetPatreons(patreonObject)
   const { deletePatreon } = useDeletePatreon()
   const [visible, setVisible] = useState(true)
@@ -37,12 +39,12 @@ const PatreonSearch = () => {
     refreshPatreons()
   }
 
-  const handleEdit = (id) => {
-    console.log(id)
+  const handleEdit = (patreon) => {
+    navigateTo(routeNames.patreons.save, { state: patreon })
   }
-  const handleDelete = (id, name) => {
-    deleteObj.id = id
-    deleteObj.name = name
+  const handleDelete = (patreon) => {
+    deleteObj.id = patreon.idPatreon
+    deleteObj.name = patreon.patreonName
     setDeleteData(deleteObj)
     toggleDeleteModal(true)
   }
@@ -63,26 +65,16 @@ const PatreonSearch = () => {
     ...actionColumns,
   ]
 
-  const items = patreons.map((item) => {
+  const items = patreons.map((patreon) => {
     return {
-      id: item.idPatreon,
-      name: item.patreonName,
+      id: patreon.idPatreon,
+      name: patreon.patreonName,
       actions: (
         <>
-          <CButton
-            color="warning"
-            variant="ghost"
-            size="sm"
-            onClick={() => handleEdit(item.idPatreon)}
-          >
+          <CButton color="warning" variant="ghost" size="sm" onClick={() => handleEdit(patreon)}>
             <CIcon icon={cilPencil} />
           </CButton>
-          <CButton
-            color="danger"
-            variant="ghost"
-            size="sm"
-            onClick={() => handleDelete(item.idPatreon, item.patreonName)}
-          >
+          <CButton color="danger" variant="ghost" size="sm" onClick={() => handleDelete(patreon)}>
             <CIcon icon={cilTrash} />
           </CButton>
         </>

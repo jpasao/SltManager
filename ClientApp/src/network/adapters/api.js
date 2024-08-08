@@ -14,9 +14,11 @@ const api = {
   put: (endpoint, body) =>
     fetch(`${basePath}/${endpoint}`, {
       method: 'PUT',
-      Accept: 'application/json, text/plain',
-      'Content-Type': 'application/json',
       body: body && JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      Accept: 'application/json',
     }),
   delete: (endpoint) =>
     fetch(`${basePath}/${endpoint}`, {

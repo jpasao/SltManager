@@ -2,6 +2,7 @@ import React from 'react'
 import CIcon from '@coreui/icons-react'
 import { cil3d, cilPencil, cilTag, cibPatreon, cilSearch } from '@coreui/icons'
 import { CNavItem, CNavTitle } from '@coreui/react'
+import { routeNames } from './defaults/global'
 
 const _nav = [
   {
@@ -12,13 +13,13 @@ const _nav = [
   {
     component: CNavItem,
     name: 'Buscar',
-    to: '/models/search',
+    to: routeNames.models.search,
     icon: <CIcon icon={cilSearch} customClassName="nav-icon" />,
   },
   {
     component: CNavItem,
-    name: 'Editar',
-    to: '/models/edit',
+    name: 'Guardar',
+    to: routeNames.models.save,
     icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
   },
   {
@@ -29,13 +30,13 @@ const _nav = [
   {
     component: CNavItem,
     name: 'Buscar',
-    to: '/patreons/search',
+    to: routeNames.patreons.search,
     icon: <CIcon icon={cilSearch} customClassName="nav-icon" />,
   },
   {
     component: CNavItem,
-    name: 'Editar',
-    to: '/patreons/edit',
+    name: 'Guardar',
+    to: routeNames.patreons.save,
     icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
   },
   {
@@ -46,13 +47,13 @@ const _nav = [
   {
     component: CNavItem,
     name: 'Buscar',
-    to: '/tags/search',
+    to: routeNames.tags.search,
     icon: <CIcon icon={cilSearch} customClassName="nav-icon" />,
   },
   {
     component: CNavItem,
-    name: 'Editar',
-    to: '/tags/edit',
+    name: 'Guardar',
+    to: routeNames.tags.save,
     icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
   },
 ]
