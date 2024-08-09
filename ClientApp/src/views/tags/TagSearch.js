@@ -14,18 +14,18 @@ import {
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilCaretTop, cilCaretBottom, cilPencil, cilTrash } from '@coreui/icons'
-import ModalWindow from '../../../components/ModalComponent'
-import { useGetPatreons, useDeletePatreon } from '../../../network/hooks/patreon'
-import { defaultPatreon, defaultDelete } from '../../../defaults/patreon'
-import { actionColumns, routeNames } from '../../../defaults/global'
+import ModalWindow from '../../components/ModalComponent'
+import { useGetTags, useDeleteTag } from '../../network/hooks/tag'
+import { defaultTag, defaultDelete } from '../../defaults/tag'
+import { actionColumns, routeNames } from '../../defaults/global'
 
-const PatreonSearch = () => {
-  let patreonObject = defaultPatreon
+const TagSearch = () => {
+  let tagObject = defaultTag
   let deleteObj = defaultDelete
 
   const navigateTo = useNavigate()
-  const { patreons, refreshPatreons, isLoading: isFetchingItems } = useGetPatreons(patreonObject)
-  const { deletePatreon } = useDeletePatreon()
+  const { tags, refreshTags, isLoading: isFetchingItems } = useGetTags(tagObject)
+  const { deleteTag } = useDeleteTag()
   const [visible, setVisible] = useState(true)
   const [visibleDeleteModal, setVisibleDeleteModal] = useState(false)
   const [name, setName] = useState('')
@@ -35,16 +35,16 @@ const PatreonSearch = () => {
 
   const handleName = (event) => setName(event.target.value)
   const handleSearch = () => {
-    patreonObject.PatreonName = name
-    refreshPatreons()
+    tagObject.TagName = name
+    refreshTags()
   }
 
-  const handleEdit = (patreon) => {
-    navigateTo(routeNames.patreons.save, { state: patreon })
+  const handleEdit = (tag) => {
+    navigateTo(routeNames.tags.save, { state: tag })
   }
-  const handleDelete = (patreon) => {
-    deleteObj.id = patreon.idPatreon
-    deleteObj.name = patreon.patreonName
+  const handleDelete = (tag) => {
+    deleteObj.id = tag.idTag
+    deleteObj.name = tag.tagName
     setDeleteData(deleteObj)
     toggleDeleteModal(true)
   }
@@ -52,7 +52,7 @@ const PatreonSearch = () => {
     setVisibleDeleteModal(visible)
   }
   const deleteElement = () => {
-    deletePatreon(deleteObj.id).then(() => refreshPatreons())
+    deleteTag(deleteObj.id).then(() => refreshTags())
     toggleDeleteModal(false)
   }
 
@@ -65,16 +65,16 @@ const PatreonSearch = () => {
     ...actionColumns,
   ]
 
-  const items = patreons.map((patreon) => {
+  const items = tags.map((tag) => {
     return {
-      id: patreon.idPatreon,
-      name: patreon.patreonName,
+      id: tag.idTag,
+      name: tag.tagName,
       actions: (
         <>
-          <CButton color="warning" variant="ghost" size="sm" onClick={() => handleEdit(patreon)}>
+          <CButton color="warning" variant="ghost" size="sm" onClick={() => handleEdit(tag)}>
             <CIcon icon={cilPencil} />
           </CButton>
-          <CButton color="danger" variant="ghost" size="sm" onClick={() => handleDelete(patreon)}>
+          <CButton color="danger" variant="ghost" size="sm" onClick={() => handleDelete(tag)}>
             <CIcon icon={cilTrash} />
           </CButton>
         </>
@@ -103,12 +103,12 @@ const PatreonSearch = () => {
               <CCollapse visible={visible}>
                 <CFormInput
                   type="text"
-                  id="patreonName"
+                  id="tagName"
                   value={name}
                   onChange={handleName}
                   floatingClassName="mb-3"
                   floatingLabel="Nombre"
-                  placeholder="Filtra los Patreon por nombre..."
+                  placeholder="Filtra las Etiquetas por nombre..."
                 />
                 <CButton
                   color="primary"
@@ -141,4 +141,4 @@ const PatreonSearch = () => {
   )
 }
 
-export default PatreonSearch
+export default TagSearch

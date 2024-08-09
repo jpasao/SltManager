@@ -1,15 +1,24 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import * as tagService from '../services/tag'
 
-export const useGetTags = () => {
+export const useGetTags = (tagObject) => {
+  const [isLoading, setIsLoading] = useState(false)
   const [tags, setTags] = useState([])
+  const [refresh, setRefresh] = useState(false)
 
-  const getTags = (tagObject) => {
-    return tagService.getTags(tagObject).then(({ tags }) => {
+  useEffect(() => {
+    setIsLoading(true)
+    tagService.getTags(tagObject).then((tags) => {
       setTags(tags)
+      setIsLoading(false)
     })
+  }, [refresh])
+
+  const refreshTags = () => {
+    setRefresh(!refresh)
   }
-  return { getTags }
+
+  return { tags, refreshTags, isLoading }
 }
 
 export const useCreateTag = () => {
@@ -27,8 +36,7 @@ export const useUpdateTag = () => {
 }
 
 export const useDeleteTag = () => {
-  const deleteTag = (tagObject) => {
-    return tagService.deleteTag(tagObject)
-  }
+  const deleteTag = (tagObject) => tagService.deleteTag(tagObject)
+
   return { deleteTag }
 }

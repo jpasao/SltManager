@@ -10,9 +10,9 @@ import {
   CFormInput,
   CForm,
 } from '@coreui/react'
-import { useCreatePatreon, useUpdatePatreon } from '../../../network/hooks/patreon'
-import { defaultPatreon } from '../../../defaults/patreon'
-import { routeNames } from '../../../defaults/global'
+import { useCreatePatreon, useUpdatePatreon } from '../../network/hooks/patreon'
+import { defaultPatreon } from '../../defaults/patreon'
+import { routeNames } from '../../defaults/global'
 
 const PatreonSave = () => {
   const location = useLocation()
@@ -69,7 +69,7 @@ const PatreonSave = () => {
       <CCol xs={12}>
         <CCard className="mb-4">
           <CCardHeader>
-            <strong>{editingPatreon ? 'Guardar' : 'Crear'}</strong>
+            <strong>{editingPatreon ? 'Editar' : 'Crear'}</strong>
           </CCardHeader>
           <CCardBody>
             <CForm
