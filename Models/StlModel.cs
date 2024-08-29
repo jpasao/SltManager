@@ -18,7 +18,12 @@ public class StlModel
 
   public byte Month { get; set; }
 
-  public List<Photo>? Image { get; set; }
+  public List<Photo> Image { get; set; }
 
   public string? Path { get; set; } 
 }
+
+  public struct PathObj
+  {
+      public string path {get;set;}
+  }

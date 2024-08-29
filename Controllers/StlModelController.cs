@@ -17,6 +17,18 @@ public class StlModelController : ControllerBase
         repository = new RepositoryBase(connectionString);
     }
 
+    [HttpGet("ModelYears")]
+    public async Task<List<int>> GetModelYears()
+    {
+        return await repository.GetModelYears();
+    }
+
+    [HttpPost("OpenFolder")]
+    public async Task OpenFolder(PathObj path)
+    {
+        await repository.OpenFolder(path.path);
+    }
+
     [HttpPost("Get")]
     public async Task<IEnumerable<StlModel>> Get(StlModel model)
     {
@@ -27,6 +39,12 @@ public class StlModelController : ControllerBase
     public async Task<int> Post(StlModel model)
     {
         return await repository.SaveModel(model);
+    }
+
+    [HttpGet("Photo")]
+    public async Task<List<Photo>> GetPhotos(int id)
+    {
+        return await repository.GetPhotos(id); 
     }
 
     [HttpPost("Photo")]

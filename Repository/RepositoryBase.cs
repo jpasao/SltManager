@@ -1,4 +1,5 @@
 using System.Data;
+using System.Diagnostics;
 using Dapper;
 using Microsoft.Extensions.Options;
 using MySql.Data.MySqlClient;
@@ -84,14 +85,11 @@ public class RepositoryBase : IRepositoryBase
                     P.IdPatreon,
                     P.PatreonName,
                     T.IdTag, 
-                    T.TagName,
-                    MP.IdPhoto,
-                    MP.Image
+                    T.TagName
                 FROM models M
                     INNER JOIN patreons P ON M.IdPatreon = P.IdPatreon
-                    INNER JOIN modeltags MT ON MT.IdModel = M.IdModel
-                    INNER JOIN tags T ON T.IdTag = MT.IdTag
-                    LEFT JOIN photos MP ON MP.IdModel = M.IdModel
+                    LEFT JOIN modeltags MT ON MT.IdModel = M.IdModel
+                    INNER JOIN tags T ON T.IdTag = MT.IdTag                    
                 WHERE (@IdPatreon = 0 OR M.IdPatreon = @IdPatreon) AND
                     (@IdTag = 0 OR T.IdTag = @IdTag) AND
                     (@ModelName = '' OR M.ModelName LIKE CONCAT('%', @ModelName, '%')) AND
@@ -99,13 +97,12 @@ public class RepositoryBase : IRepositoryBase
                     (@Month = 0 OR M.Month = @Month)
                 ORDER BY M.ModelName";
 
-            var models = await db.QueryAsync<StlModel, Patreon, Tag, Photo, StlModel>(sql, 
-                (model, patreon, tag, photo) => {
+            var models = await db.QueryAsync<StlModel, Patreon, Tag, StlModel>(sql, 
+                (model, patreon, tag) => {
                     model.Patreon = patreon;
-                    model.Tag = new List<Tag>{ tag };
-                    model.Image = new List<Photo>{ photo };
+                    model.Tag = new List<Tag>{ tag };                    
                     return model;
-                }, splitOn: "IdPatreon, IdTag, IdPhoto", 
+                }, splitOn: "IdPatreon, IdTag", 
                 param: new {
                     model.Patreon.IdPatreon,
                     model.Tag.FirstOrDefault().IdTag,
@@ -113,16 +110,20 @@ public class RepositoryBase : IRepositoryBase
                     model.Year,
                     model.Month
                 }).ConfigureAwait(false);
-            
+
             var results = models.GroupBy(p => p.IdModel).Select(g => 
             {
                 var groupedModel = g.First();
-                groupedModel.Tag = g.Select(p => p.Tag.Single()).ToList();
-                groupedModel.Image = g.Select(p => p.Image.SingleOrDefault()).ToList();
+                groupedModel.Tag = g.Select(tag => tag.Tag.Single()).ToList();
+                groupedModel.Tag = groupedModel.Tag
+                    .GroupBy(tag => tag.IdTag)
+                    .Select(tag => tag.First())
+                    .ToList();
+                    
                 return groupedModel;
-            });
-
-            return results.AsList();            
+            }).AsList();
+       
+            return results;        
         }
         catch (Exception)
         {
@@ -176,6 +177,22 @@ public class RepositoryBase : IRepositoryBase
         catch (Exception)
         {
             return -1;
+        }
+    }
+
+    public async Task<List<Photo>> GetPhotos(int idModel)
+    {
+        try
+        {
+            var sql = @"SELECT idPhoto, Image
+                        FROM photos
+                        WHERE idModel = @IdModel";
+
+            return (await db.QueryAsync<Photo>(sql, new { IdModel = idModel }).ConfigureAwait(false)).AsList();
+        }
+        catch (System.Exception)
+        {
+            return null;
         }
     }
  
@@ -236,8 +253,8 @@ public class RepositoryBase : IRepositoryBase
         try
         {
             int modelDelete = 0, modelPhotoDelete = 0;
-            var sql = "DELETE FROM models WHERE IdModel = @idModel";
-            modelDelete = await db.ExecuteAsync(sql, id).ConfigureAwait(false);
+            var sql = "DELETE FROM models WHERE IdModel = @IdModel";
+            modelDelete = await db.ExecuteAsync(sql, new { IdModel = id }).ConfigureAwait(false);
 
             if (modelDelete > 0)
             {
@@ -250,7 +267,29 @@ public class RepositoryBase : IRepositoryBase
         {
             return -1;
         }
-    } 
+    }
+
+    public async Task<List<int>> GetModelYears()
+    {
+        try
+        {
+            var sql = @"SELECT DISTINCT Year FROM models ORDER BY Year";
+
+            return (await db.QueryAsync<int>(sql).ConfigureAwait(false)).AsList();
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    public async Task OpenFolder(string path)
+    {
+        var process = new ProcessStartInfo() {
+            FileName = $"{path}{Path.DirectorySeparatorChar}",
+            UseShellExecute = true};
+        Process.Start(process);
+    }
 
     #endregion
 

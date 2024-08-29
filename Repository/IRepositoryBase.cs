@@ -19,9 +19,15 @@ internal interface IRepositoryBase
     
     Task<int> SaveModel(StlModel model);
 
+    Task<List<Photo>> GetPhotos(int idModel);
+
     Task<int> SavePhotos(int idModel, int idPhoto, bool isUpdate, IFormFile photo);
 
     Task<int> DeleteModel(int id); 
+
+    Task<List<int>> GetModelYears();
+    
+    Task OpenFolder(string path);
 
     #endregion
 

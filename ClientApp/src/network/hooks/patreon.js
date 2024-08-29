@@ -35,7 +35,7 @@ export const useUpdatePatreon = () => {
 }
 
 export const useDeletePatreon = () => {
-  const deletePatreon = (patreonObject) => patreonService.deletePatreon(patreonObject)
+  const deletePatreon = (patreonId) => patreonService.deletePatreon(patreonId)
 
   return { deletePatreon }
 }

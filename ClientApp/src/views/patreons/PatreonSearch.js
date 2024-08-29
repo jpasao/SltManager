@@ -11,6 +11,7 @@ import {
   CCollapse,
   CTable,
   CForm,
+  CCallout,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilCaretTop, cilCaretBottom, cilPencil, cilTrash } from '@coreui/icons'
@@ -39,6 +40,7 @@ const PatreonSearch = () => {
     refreshPatreons()
   }
 
+  const handleReset = () => setName('')
   const handleEdit = (patreon) => {
     navigateTo(routeNames.patreons.save, { state: patreon })
   }
@@ -101,23 +103,36 @@ const PatreonSearch = () => {
           <CCardBody>
             <CForm noValidate onSubmit={handleSearch}>
               <CCollapse visible={visible}>
-                <CFormInput
-                  type="text"
-                  id="patreonName"
-                  value={name}
-                  onChange={handleName}
-                  floatingClassName="mb-3"
-                  floatingLabel="Nombre"
-                  placeholder="Filtra los Patreon por nombre..."
-                />
-                <CButton
-                  color="primary"
-                  className="alignRight"
-                  onClick={handleSearch}
-                  disabled={isLoading}
-                >
-                  Buscar
-                </CButton>
+                <CRow xs={{ gutter: 2 }}>
+                  <CCol xs={9}>
+                    <CFormInput
+                      type="text"
+                      id="patreonName"
+                      value={name}
+                      onChange={handleName}
+                      floatingClassName="mb-3"
+                      floatingLabel="Nombre"
+                      placeholder="Filtra los Patreon por nombre..."
+                    />
+                  </CCol>
+                  <CCol xs>
+                    <CButton
+                      as="input"
+                      type="reset"
+                      color="secondary"
+                      value="Limpiar"
+                      onClick={handleReset}
+                    />
+                    <CButton
+                      color="primary"
+                      className="alignRight"
+                      onClick={handleSearch}
+                      disabled={isLoading}
+                    >
+                      Buscar
+                    </CButton>
+                  </CCol>
+                </CRow>
               </CCollapse>
             </CForm>
           </CCardBody>
@@ -127,7 +142,11 @@ const PatreonSearch = () => {
             <strong>Resultados</strong>
           </CCardHeader>
           <CCardBody>
-            <CTable striped bordered columns={columns} items={items} />
+            {items.length === 0 && !isFetchingItems ? (
+              <CCallout color="light">No aparece nada con esa búsqueda.</CCallout>
+            ) : (
+              <CTable striped bordered columns={columns} items={items} />
+            )}
           </CCardBody>
         </CCard>
       </CCol>

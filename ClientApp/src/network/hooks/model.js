@@ -1,15 +1,38 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import * as modelService from '../services/model'
 
-export const useGetModels = () => {
+export const useGetModels = (modelObject) => {
+  const [isLoading, setIsLoading] = useState(false)
   const [models, setModels] = useState([])
+  const [refresh, setRefresh] = useState(false)
 
-  const getModels = (modelObject) => {
-    return modelService.getModels(modelObject).then(({ models }) => {
+  useEffect(() => {
+    setIsLoading(true)
+    modelService.getModels(modelObject).then((models) => {
       setModels(models)
+      setIsLoading(false)
     })
+  }, [refresh])
+
+  const refreshModels = () => {
+    setRefresh(!refresh)
   }
-  return { getModels }
+
+  return { models, refreshModels, isLoading }
+}
+
+export const useGetModelYears = () => {
+  const modelYears = () => {
+    return modelService.getModelYears()
+  }
+  return { modelYears }
+}
+
+export const useOpenFolder = () => {
+  const openFolder = (path) => {
+    return modelService.openFolder(path)
+  }
+  return { openFolder }
 }
 
 export const useCreateModel = () => {
@@ -27,8 +50,14 @@ export const useUpdateModel = () => {
 }
 
 export const useDeleteModel = () => {
-  const deleteModel = (modelObject) => {
-    return modelService.deleteModel(modelObject)
-  }
+  const deleteModel = (modelId) => modelService.deleteModel(modelId)
+
   return { deleteModel }
+}
+
+export const useGetPhotos = () => {
+  const getPhotos = (modelId) => {
+    return modelService.getPhotos(modelId)
+  }
+  return { getPhotos }
 }

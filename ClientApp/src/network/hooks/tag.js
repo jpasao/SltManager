@@ -36,7 +36,7 @@ export const useUpdateTag = () => {
 }
 
 export const useDeleteTag = () => {
-  const deleteTag = (tagObject) => tagService.deleteTag(tagObject)
+  const deleteTag = (tagId) => tagService.deleteTag(tagId)
 
   return { deleteTag }
 }
