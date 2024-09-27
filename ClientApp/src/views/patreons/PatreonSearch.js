@@ -32,8 +32,6 @@ const PatreonSearch = () => {
   const [name, setName] = useState('')
   const [deleteData, setDeleteData] = useState(deleteObj)
 
-  const isLoading = isFetchingItems
-
   const handleName = (event) => setName(event.target.value)
   const handleSearch = () => {
     patreonObject.PatreonName = name
@@ -45,8 +43,8 @@ const PatreonSearch = () => {
     navigateTo(routeNames.patreons.save, { state: patreon })
   }
   const handleDelete = (patreon) => {
-    deleteObj.id = patreon.idPatreon
-    deleteObj.name = patreon.patreonName
+    deleteObj.id = patreon.IdPatreon
+    deleteObj.name = patreon.PatreonName
     setDeleteData(deleteObj)
     toggleDeleteModal(true)
   }
@@ -69,8 +67,8 @@ const PatreonSearch = () => {
 
   const items = patreons.map((patreon) => {
     return {
-      id: patreon.idPatreon,
-      name: patreon.patreonName,
+      id: patreon.IdPatreon,
+      name: patreon.PatreonName,
       actions: (
         <>
           <CButton color="warning" variant="ghost" size="sm" onClick={() => handleEdit(patreon)}>
@@ -127,7 +125,7 @@ const PatreonSearch = () => {
                       color="primary"
                       className="alignRight"
                       onClick={handleSearch}
-                      disabled={isLoading}
+                      disabled={isFetchingItems}
                     >
                       Buscar
                     </CButton>

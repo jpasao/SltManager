@@ -12,3 +12,26 @@
     height: 420px;
     overflow: auto;
 }
+.imageThumbnails span img {
+    border-radius: var(--cui-border-radius);
+    margin: 10px 10px 0 0;
+}
+.imageThumbnails span img:hover {
+    margin-right: 8px;
+}
+.imageThumbnails span img:hover + .deleteImg {
+    display: inline-block; 
+    margin-right: -21px;   
+}
+.deleteImg {
+    display: none;
+    position: relative;
+    cursor: pointer;
+    top: -95px;
+    left: -45px;
+}
+.deleteImg:hover {
+    display: inline-block;
+    left: -47px;
+    margin-right: -23px;
+}

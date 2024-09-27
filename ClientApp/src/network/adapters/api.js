@@ -11,6 +11,11 @@ const api = {
       },
       Accept: 'application/json',
     }),
+  postImage: (endpoint, body) =>
+    fetch(`${basePath}/${endpoint}`, {
+      method: 'POST',
+      body: body,
+    }),
   put: (endpoint, body) =>
     fetch(`${basePath}/${endpoint}`, {
       method: 'PUT',

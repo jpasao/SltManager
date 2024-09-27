@@ -21,8 +21,10 @@ internal interface IRepositoryBase
 
     Task<List<Photo>> GetPhotos(int idModel);
 
-    Task<int> SavePhotos(int idModel, int idPhoto, bool isUpdate, IFormFile photo);
+    Task<int> SavePhoto(int idModel, IFormFile photo);
 
+    Task<int> DeletePhoto(int idPhoto);
+    
     Task<int> DeleteModel(int id); 
 
     Task<List<int>> GetModelYears();

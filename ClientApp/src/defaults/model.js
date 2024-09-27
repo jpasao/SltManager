@@ -1,8 +1,8 @@
+import { useState, useEffect, useRef, useCallback } from 'react'
 const defaultModel = {
   IdModel: 0,
   ModelName: '',
   Path: '',
-  Photo: '',
   Year: 0,
   Month: 0,
   Patreon: {
@@ -14,7 +14,8 @@ const defaultModel = {
       TagName: '',
     },
   ],
-  image: [],
+  TagIdList: [0],
+  Image: [],
 }
 
 const defaultDelete = { id: 0, name: '', page: 'Modelos' }
@@ -34,4 +35,23 @@ const months = [
   { value: 12, name: 'Diciembre' },
 ]
 
-export { defaultModel, defaultDelete, months }
+const useStateCallback = (initialState) => {
+  const [state, setState] = useState(initialState)
+  const cbRef = useRef(null)
+
+  const setStateCallback = useCallback((state, cb) => {
+    cbRef.current = cb
+    setState(state)
+  }, [])
+
+  useEffect(() => {
+    if (cbRef.current) {
+      cbRef.current(state)
+      cbRef.current = null
+    }
+  }, [state])
+
+  return [state, setStateCallback]
+}
+
+export { defaultModel, defaultDelete, months, useStateCallback }

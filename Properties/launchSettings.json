@@ -15,7 +15,8 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": "Microsoft.AspNetCore.SpaProxy"
-      }
+      },
+      "requireExactSource": "false"
     },
     "IIS Express": {
       "commandName": "IISExpress",

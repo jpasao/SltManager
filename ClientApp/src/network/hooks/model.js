@@ -61,3 +61,17 @@ export const useGetPhotos = () => {
   }
   return { getPhotos }
 }
+
+export const useCreatePhoto = () => {
+  const createPhoto = (photo, modelId) => {
+    return modelService.createPhoto(photo, modelId)
+  }
+  return { createPhoto }
+}
+
+export const useDeletePhoto = () => {
+  const deletePhoto = (photoId) => {
+    return modelService.deletePhoto(photoId)
+  }
+  return { deletePhoto }
+}

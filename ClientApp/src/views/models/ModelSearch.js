@@ -22,8 +22,6 @@ import {
   CCarouselItem,
   CCardTitle,
   CCardText,
-  CListGroup,
-  CListGroupItem,
   CBadge,
   CCallout,
 } from '@coreui/react'
@@ -45,17 +43,18 @@ import {
 } from '../../network/hooks/model'
 import { useGetPatreons } from '../../network/hooks/patreon'
 import { useGetTags } from '../../network/hooks/tag'
-import { defaultModel, defaultDelete, months } from '../../defaults/model'
+import { defaultModel, defaultDelete, months, useStateCallback } from '../../defaults/model'
 import { defaultPatreon } from '../../defaults/patreon'
 import { defaultTag } from '../../defaults/tag'
 import { actionColumns, routeNames } from '../../defaults/global'
-import NoImage from '../../../public/no-image.png'
+import NoImage from '/no-image.png'
 
 const ModelSearch = () => {
-  let modelObject = defaultModel
-  let deleteObj = defaultDelete
+  let deleteObj = structuredClone(defaultDelete)
 
-  const { models, refreshModels, isLoading: isFetchingItems } = useGetModels(modelObject)
+  const navigateTo = useNavigate()
+  const [search, setSearch] = useState(defaultModel)
+  const { models, refreshModels, isLoading: isFetchingItems } = useGetModels(search)
   const { deleteModel } = useDeleteModel()
   const { modelYears } = useGetModelYears()
   const { patreons } = useGetPatreons(defaultPatreon)
@@ -72,12 +71,10 @@ const ModelSearch = () => {
   const [patreon, setPatreon] = useState(0)
   const [model, setModel] = useState(defaultModel)
   const [images, setImages] = useState([])
-  const [tag, setTag] = useState(0)
+  const [tag, setTag] = useStateCallback([])
   const [deleteData, setDeleteData] = useState(deleteObj)
 
-  const isLoading = isFetchingItems
-
-  if (years.length === 0 && isLoading) {
+  if (years.length === 0 && isFetchingItems) {
     modelYears().then((data) => setYears(data))
   }
 
@@ -85,15 +82,32 @@ const ModelSearch = () => {
   const handleYear = (event) => setYear(event.target.value)
   const handleMonth = (event) => setMonth(event.target.value)
   const handlePatreon = (event) => setPatreon(event.target.value)
-  const handleTag = (event) => setTag(event.target.value)
+  const handleTag = (event) => {
+    let selectedTags = []
+    for (let tag of event.target.options) {
+      if (tag.selected) selectedTags.push(tag.value)
+    }
+    setTag(selectedTags)
+  }
 
   const handleSearch = () => {
-    modelObject.ModelName = name
-    modelObject.Year = year
-    modelObject.Month = month
-    modelObject.Patreon.IdPatreon = patreon
-    modelObject.Tag[0].IdTag = tag
+    refreshSearchParams()
     refreshModels()
+  }
+  const refreshSearchParams = () => {
+    const defaultClone = JSON.parse(JSON.stringify(defaultModel))
+    const newSearch = {
+      ...defaultClone,
+      ModelName: name,
+      Year: year,
+      Month: month,
+      Patreon: { IdPatreon: patreon },
+    }
+    if (tag.length) {
+      newSearch.Tag.length = 0
+      tag.map((value) => newSearch.Tag.push({ IdTag: value, TagName: '' }))
+    }
+    setSearch(newSearch)
   }
 
   const handleReset = () => {
@@ -101,12 +115,14 @@ const ModelSearch = () => {
     setYear(0)
     setMonth(0)
     setPatreon(0)
-    setTag(0)
+    setTag([], refreshSearchParams())
   }
-  const handleEdit = (model) => {}
+  const handleEdit = (model) => {
+    navigateTo(routeNames.models.save, { state: model })
+  }
   const handleDelete = (model) => {
-    deleteObj.id = model.idModel
-    deleteObj.name = model.modelName
+    deleteObj.id = model.IdModel
+    deleteObj.name = model.ModelName
     setDeleteData(deleteObj)
     toggleDeleteModal(true)
   }
@@ -114,12 +130,12 @@ const ModelSearch = () => {
     setVisibleDeleteModal(visible)
   }
   const deleteElement = () => {
-    deleteModel(deleteObj.id).then(() => refreshModels())
+    deleteModel(deleteData.id).then(() => refreshModels())
     toggleDeleteModal(false)
   }
   const handleView = (model) => {
     setModel(model)
-    getPhotos(model.idModel).then((photos) => {
+    getPhotos(model.IdModel).then((photos) => {
       setImages(photos)
       toggleDetailModal(true)
     })
@@ -127,15 +143,12 @@ const ModelSearch = () => {
   const toggleDetailModal = (visible) => {
     setVisibleDetailModal(visible)
   }
-
   const setImage = (image) => {
     return image === null ? NoImage : `data:image/jpeg;base64,${image}`
   }
-
   const getMonthName = (monthNumber) => {
     return months.find((month) => month.value === monthNumber)?.name
   }
-
   const handleOpenFolder = (path) => {
     const pathObj = { path: path }
     openFolder(pathObj)
@@ -167,14 +180,12 @@ const ModelSearch = () => {
 
   const items = models.map((model) => {
     return {
-      id: model.idModel,
-      name: model.modelName,
-      patreon: model.patreon.patreonName,
-      year: model.year,
-      month: model.month,
-      monthName: getMonthName(model.month),
-      images: model.image,
-      image: <CImage rounded src={setImage(model)} width={30} height={30} />,
+      id: model.IdModel,
+      name: model.ModelName,
+      patreon: model.Patreon.PatreonName,
+      year: model.Year,
+      month: model.Month,
+      monthName: getMonthName(model.Month),
       actions: (
         <>
           <CButton color="info" variant="ghost" size="sm" onClick={() => handleView(model)}>
@@ -190,6 +201,47 @@ const ModelSearch = () => {
       ),
     }
   })
+
+  const detailColumns = [
+    {
+      key: 'name',
+      label: '',
+      _props: { scope: 'col' },
+      _style: { width: '100px' },
+    },
+    {
+      key: 'data',
+      label: '',
+      _props: { scope: 'col' },
+    },
+  ]
+  const detailItems = [
+    { name: 'Fecha:', data: `${getMonthName(model.Month)} de ${model.Year}` },
+    {
+      name: 'Ruta:',
+      data: (
+        <CButton
+          color="link"
+          onClick={() => handleOpenFolder(model.Path)}
+          style={{ margin: '-8px 0 0 -12px' }}
+        >
+          {model.Path}
+        </CButton>
+      ),
+    },
+    {
+      name: 'Patreon:',
+      data: model.Patreon?.PatreonName,
+    },
+    {
+      name: 'Etiquetas:',
+      data: model.Tag?.map((tag) => (
+        <CBadge key={tag.IdTag} color="secondary" style={{ marginRight: '5px' }}>
+          {tag.TagName}
+        </CBadge>
+      )),
+    },
+  ]
 
   return (
     <CRow>
@@ -266,8 +318,8 @@ const ModelSearch = () => {
                     >
                       <option value="0">Selecciona un patreon...</option>
                       {patreons.map((patreon) => (
-                        <option key={patreon.idPatreon} value={patreon.idPatreon}>
-                          {patreon.patreonName}
+                        <option key={patreon.IdPatreon} value={patreon.IdPatreon}>
+                          {patreon.PatreonName}
                         </option>
                       ))}
                     </CFormSelect>
@@ -277,13 +329,14 @@ const ModelSearch = () => {
                       id="tag"
                       value={tag}
                       onChange={handleTag}
+                      multiple
                       floatingLabel="Etiqueta"
                       placeholder="Filtra los modelos por etiqueta..."
                     >
                       <option value="0">Selecciona una etiqueta...</option>
                       {tags.map((tag) => (
-                        <option key={tag.idTag} value={tag.idTag}>
-                          {tag.tagName}
+                        <option key={tag.IdTag} value={tag.IdTag}>
+                          {tag.TagName}
                         </option>
                       ))}
                     </CFormSelect>
@@ -300,7 +353,7 @@ const ModelSearch = () => {
                       color="primary"
                       className="alignRight"
                       onClick={handleSearch}
-                      disabled={isLoading}
+                      disabled={isFetchingItems}
                     >
                       Buscar
                     </CButton>
@@ -328,10 +381,10 @@ const ModelSearch = () => {
         scrollable
         visible={visibleDetailModal}
         onClose={() => toggleDetailModal(false)}
-        aria-labelledby="OptionalSizesExample1"
+        aria-labelledby="detalles"
       >
         <CModalHeader>
-          <CModalTitle id="OptionalSizesExample1">Detalles</CModalTitle>
+          <CModalTitle id="detalles">Detalles</CModalTitle>
         </CModalHeader>
         <CModalBody>
           <CCard className="w-100">
@@ -349,11 +402,11 @@ const ModelSearch = () => {
                 </CCarouselItem>
               ) : (
                 images.map((photo, index) => (
-                  <CCarouselItem key={photo.idPhoto} className="fittedImageHeight">
+                  <CCarouselItem key={photo.IdPhoto} className="fittedImageHeight">
                     <CImage
                       className="d-block"
                       align="center"
-                      src={setImage(photo.image)}
+                      src={setImage(photo.Image)}
                       height={600}
                       fluid
                       alt={`Imagen ${index + 1}`}
@@ -363,50 +416,9 @@ const ModelSearch = () => {
               )}
             </CCarousel>
             <CCardBody>
-              <CCardTitle>{model.modelName}</CCardTitle>
-              <CCardText>
-                <CListGroup flush>
-                  <CListGroupItem>
-                    <CRow>
-                      <CCol xs={2}>Fecha:</CCol>
-                      <CCol xs={10}>
-                        {getMonthName(model.month)} de {model.year}
-                      </CCol>
-                    </CRow>
-                  </CListGroupItem>
-                  <CListGroupItem>
-                    <CRow>
-                      <CCol xs={2}>Ruta:</CCol>
-                      <CCol xs={10}>
-                        <CButton
-                          color="link"
-                          onClick={() => handleOpenFolder(model.path)}
-                          style={{ marginLeft: '-12px' }}
-                        >
-                          {model.path}
-                        </CButton>
-                      </CCol>
-                    </CRow>
-                  </CListGroupItem>
-                  <CListGroupItem>
-                    <CRow>
-                      <CCol xs={2}>Patreon:</CCol>
-                      <CCol xs={10}>{model.patreon?.patreonName}</CCol>
-                    </CRow>
-                  </CListGroupItem>
-                  <CListGroupItem>
-                    <CRow>
-                      <CCol xs={2}>Etiquetas:</CCol>
-                      <CCol xs={10}>
-                        {model.tag?.map((tag) => (
-                          <CBadge key={tag.idTag} color="secondary" style={{ marginRight: '5px' }}>
-                            {tag.tagName}
-                          </CBadge>
-                        ))}
-                      </CCol>
-                    </CRow>
-                  </CListGroupItem>
-                </CListGroup>
+              <CCardTitle>{model.ModelName}</CCardTitle>
+              <CCardText as="div">
+                <CTable striped borderless columns={detailColumns} items={detailItems} />
               </CCardText>
             </CCardBody>
           </CCard>

@@ -5,6 +5,7 @@ import PatreonSave from './views/patreons/PatreonSave'
 import TagSearch from './views/tags/TagSearch'
 import TagSave from './views/tags/TagSave'
 import ModelSearch from './views/models/ModelSearch'
+import ModelSave from './views/models/ModelSave'
 
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
 const Colors = React.lazy(() => import('./views/theme/colors/Colors'))
@@ -21,6 +22,7 @@ const routes = [
   { path: routeNames.tags.search, name: 'Etiquetas → Buscar', element: TagSearch },
   { path: routeNames.tags.save, name: 'Etiquetas → Guardar', element: TagSave },
   { path: routeNames.models.search, name: 'Modelos → Buscar', element: ModelSearch },
+  { path: routeNames.models.save, name: 'Modelos → Guardar', element: ModelSave },
 ]
 
 export default routes

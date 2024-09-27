@@ -31,15 +31,17 @@ const PatreonSave = () => {
       patreonToSave = Object.assign(
         {},
         {
-          IdPatreon: patreonToSave.idPatreon,
-          PatreonName: patreonToSave.patreonName,
+          IdPatreon: patreonToSave.IdPatreon,
+          PatreonName: patreonToSave.PatreonName,
         },
       )
     }
     setPatreon(patreonToSave)
   }, [defaultPatreon])
-  const isSaving = false
 
+  if (!editingPatreon && patreon.IdPatreon !== 0) {
+    setPatreon(defaultPatreon)
+  }
   const handleSave = (event) => {
     const form = event.currentTarget
     event.preventDefault()
@@ -91,7 +93,7 @@ const PatreonSave = () => {
                 placeholder="Nombre del Patreon"
                 required
               />
-              <CButton color="primary" className="alignRight" type="submit" disabled={isSaving}>
+              <CButton color="primary" className="alignRight" type="submit">
                 Guardar
               </CButton>
             </CForm>

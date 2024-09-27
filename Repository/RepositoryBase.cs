@@ -34,7 +34,7 @@ public class RepositoryBase : IRepositoryBase
         }
         catch (Exception)
         {
-            return null;
+            return new List<Patreon>();
         }
     }
 
@@ -91,43 +91,52 @@ public class RepositoryBase : IRepositoryBase
                     LEFT JOIN modeltags MT ON MT.IdModel = M.IdModel
                     INNER JOIN tags T ON T.IdTag = MT.IdTag                    
                 WHERE (@IdPatreon = 0 OR M.IdPatreon = @IdPatreon) AND
-                    (@IdTag = 0 OR T.IdTag = @IdTag) AND
+                    (@NoTags = 1 OR T.IdTag IN @TagIdList) AND
                     (@ModelName = '' OR M.ModelName LIKE CONCAT('%', @ModelName, '%')) AND
                     (@Year = 0 OR M.Year = @Year) AND
                     (@Month = 0 OR M.Month = @Month)
                 ORDER BY M.ModelName";
 
+            var tagList = model.Tag.Select(t => t.IdTag).ToArray();
+            model.TagIdList = tagList;
+            model.NoTags = tagList[0] != 0 ? 0 : 1;
             var models = await db.QueryAsync<StlModel, Patreon, Tag, StlModel>(sql, 
                 (model, patreon, tag) => {
                     model.Patreon = patreon;
-                    model.Tag = new List<Tag>{ tag };                    
+                    model.Tag = new List<Tag>{ tag };
+                    model.TagIdList = tagList;
                     return model;
                 }, splitOn: "IdPatreon, IdTag", 
                 param: new {
                     model.Patreon.IdPatreon,
-                    model.Tag.FirstOrDefault().IdTag,
+                    model.Tag,
+                    model.TagIdList,
                     model.ModelName,
+                    model.NoTags,
                     model.Year,
                     model.Month
                 }).ConfigureAwait(false);
 
-            var results = models.GroupBy(p => p.IdModel).Select(g => 
-            {
-                var groupedModel = g.First();
-                groupedModel.Tag = g.Select(tag => tag.Tag.Single()).ToList();
-                groupedModel.Tag = groupedModel.Tag
-                    .GroupBy(tag => tag.IdTag)
-                    .Select(tag => tag.First())
-                    .ToList();
-                    
-                return groupedModel;
-            }).AsList();
+            var results = models                
+                .GroupBy(p => p.IdModel)
+                .Select(g => 
+                {
+                    var groupedModel = g.First();
+                    groupedModel.Tag = g.Select(tag => tag.Tag.Single()).ToList();
+                        groupedModel.Tag = groupedModel.Tag
+                            .GroupBy(tag => tag.IdTag)
+                            .Select(tag => tag.First())
+                            .ToList();
+                        
+                    return groupedModel;
+                })
+                .AsList();
        
             return results;        
         }
         catch (Exception)
         {
-            return null;
+            return new List<StlModel>();
         }
     }
     
@@ -153,7 +162,7 @@ public class RepositoryBase : IRepositoryBase
 
             modelId = isNewModel ? modelSave : model.IdModel;
 
-            if (modelSave > 0 && model.Tag != null && model.Tag.Count > 0) 
+            if (model.Tag != null && model.Tag.Count > 0) 
             {
                 if (!isNewModel) 
                 {
@@ -168,7 +177,7 @@ public class RepositoryBase : IRepositoryBase
                         {
                             tag.IdTag,
                             IdModel = modelId
-                        }).ConfigureAwait(false);  
+                        }).ConfigureAwait(false);
                 }); 
             }
 
@@ -190,13 +199,13 @@ public class RepositoryBase : IRepositoryBase
 
             return (await db.QueryAsync<Photo>(sql, new { IdModel = idModel }).ConfigureAwait(false)).AsList();
         }
-        catch (System.Exception)
+        catch (Exception)
         {
-            return null;
+            return new List<Photo>();
         }
     }
- 
-    public async Task<int> SavePhotos(int idModel, int idPhoto, bool isUpdate, IFormFile photo)
+
+        public async Task<int> SavePhoto(int idModel, IFormFile photo)
     {
         try
         {
@@ -215,15 +224,29 @@ public class RepositoryBase : IRepositoryBase
 
             DynamicParameters parameters = new DynamicParameters();
             parameters.Add("@IdModel", idModel);
-            parameters.Add("@IdPhoto", idPhoto);
             parameters.Add("@Photo", photoBytes, DbType.Binary, ParameterDirection.Input);
             
-            string sql = isUpdate ? 
-                "UPDATE photos SET Image = @Photo, IdModel = @IdModel WHERE IdPhoto = @IdPhoto" :
-                "INSERT INTO photos (IdModel, Image) VALUES (@IdModel, @Photo)";
-            int photoSaving = await db.ExecuteAsync(sql, parameters).ConfigureAwait(false);
+            string sql = "INSERT INTO photos (IdModel, Image) VALUES (@IdModel, @Photo); SELECT LAST_INSERT_ID()";
+            int photoSaving = await db.ExecuteScalarAsync<int>(sql, parameters).ConfigureAwait(false);
 
             return photoSaving;
+        }
+        catch (Exception)
+        {
+            return -1;
+        }
+    }
+
+    public async Task<int> DeletePhoto(int idPhoto)
+    {
+        try
+        {
+            var sql = "DELETE FROM photos WHERE IdPhoto = @IdPhoto";
+            return await db.ExecuteAsync(sql, 
+            new 
+            { 
+                IdPhoto = idPhoto 
+            }).ConfigureAwait(false);  
         }
         catch (Exception)
         {
@@ -279,7 +302,7 @@ public class RepositoryBase : IRepositoryBase
         }
         catch (Exception)
         {
-            return null;
+            return new List<int>();
         }
     }
 
@@ -308,7 +331,7 @@ public class RepositoryBase : IRepositoryBase
         }
         catch (Exception)
         {
-            return null;
+            return new List<Tag>();
         }
     }
 

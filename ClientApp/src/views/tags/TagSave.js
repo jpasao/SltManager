@@ -31,14 +31,17 @@ const TagSave = () => {
       tagToSave = Object.assign(
         {},
         {
-          IdTag: tagToSave.idTag,
-          TagName: tagToSave.tagName,
+          IdTag: tagToSave.IdTag,
+          TagName: tagToSave.TagName,
         },
       )
     }
     setTag(tagToSave)
   }, [defaultTag])
-  const isSaving = false
+
+  if (!editingTag && tag.IdTag !== 0) {
+    setTag(defaultTag)
+  }
 
   const handleSave = (event) => {
     const form = event.currentTarget
@@ -91,7 +94,7 @@ const TagSave = () => {
                 placeholder="Nombre de la Etiqueta"
                 required
               />
-              <CButton color="primary" className="alignRight" type="submit" disabled={isSaving}>
+              <CButton color="primary" className="alignRight" type="submit">
                 Guardar
               </CButton>
             </CForm>

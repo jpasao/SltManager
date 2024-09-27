@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Dapper.Contrib.Extensions;
 
 namespace stl.Models;
@@ -12,6 +13,11 @@ public class StlModel
 
   public List<Tag> Tag { get; set; }
 
+  public int[] TagIdList { get; set; }
+
+  [JsonIgnore]
+  public int NoTags {get; set; }
+
   public string? ModelName { get; set; } 
 
   public short Year { get; set; }
@@ -23,7 +29,7 @@ public class StlModel
   public string? Path { get; set; } 
 }
 
-  public struct PathObj
-  {
-      public string path {get;set;}
-  }
+public struct PathObj
+{
+    public string path {get;set;}
+}

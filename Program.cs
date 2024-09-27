@@ -10,7 +10,9 @@ builder.Host.ConfigureLogging(logging =>
     logging.ClearProviders();
     logging.AddConsole();
 });
-builder.Services.AddControllersWithViews();
+builder.Services
+    .AddControllersWithViews()
+    .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = null);
 builder.Services.AddSingleton<RepositoryBase>();
 builder.Services.AddTransient<IRepositoryBase, RepositoryBase>();
 builder.Services.Configure<ConnectionString>(builder.Configuration.GetSection("ConnectionStrings"));
@@ -48,7 +50,7 @@ app.Urls.Add("http://localhost:5003");
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller}/{action=Index}/{id?}/{idPhoto?}");
+    pattern: "{controller}/{action=Index}/{id?}");
 
 app.MapFallbackToFile("index.html");
 

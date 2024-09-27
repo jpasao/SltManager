@@ -21,12 +21,7 @@ export const deleteModel = (modelId) => api.delete(`${modelResource}?id=${modelI
 export const getPhotos = (modelId) =>
   api.get(`${modelResource}/Photo?id=${modelId}`).then((data) => data.json())
 
-export const createPhoto = (photo, modelId, photoId) =>
-  api
-    .post(`${modelResource}/Photo?id=${modelId}&idPhoto=${photoId}`, photo)
-    .then((data) => data.json())
+export const createPhoto = (photo, modelId) =>
+  api.postImage(`${modelResource}/Photo?id=${modelId}`, photo).then((data) => data.json())
 
-export const updatePhoto = (photo, modelId, photoId) =>
-  api
-    .put(`${modelResource}/Photo?id=${modelId}&idPhoto=${photoId}`, photo)
-    .then((data) => data.json())
+export const deletePhoto = (photoId) => api.delete(`${modelResource}/Photo?id=${photoId}`)

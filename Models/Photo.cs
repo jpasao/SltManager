@@ -12,3 +12,10 @@ public class Photo
 
   public byte[]? Image { get; set; }
 }
+
+public class PhotoData
+{
+  public int IdModel { get; set; }
+
+  public IFormFile Image { get; set; }
+}

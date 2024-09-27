@@ -32,8 +32,6 @@ const TagSearch = () => {
   const [name, setName] = useState('')
   const [deleteData, setDeleteData] = useState(deleteObj)
 
-  const isLoading = isFetchingItems
-
   const handleName = (event) => setName(event.target.value)
   const handleSearch = () => {
     tagObject.TagName = name
@@ -45,8 +43,8 @@ const TagSearch = () => {
     navigateTo(routeNames.tags.save, { state: tag })
   }
   const handleDelete = (tag) => {
-    deleteObj.id = tag.idTag
-    deleteObj.name = tag.tagName
+    deleteObj.id = tag.IdTag
+    deleteObj.name = tag.TagName
     setDeleteData(deleteObj)
     toggleDeleteModal(true)
   }
@@ -69,8 +67,8 @@ const TagSearch = () => {
 
   const items = tags.map((tag) => {
     return {
-      id: tag.idTag,
-      name: tag.tagName,
+      id: tag.IdTag,
+      name: tag.TagName,
       actions: (
         <>
           <CButton color="warning" variant="ghost" size="sm" onClick={() => handleEdit(tag)}>
@@ -127,7 +125,7 @@ const TagSearch = () => {
                       color="primary"
                       className="alignRight"
                       onClick={handleSearch}
-                      disabled={isLoading}
+                      disabled={isFetchingItems}
                     >
                       Buscar
                     </CButton>

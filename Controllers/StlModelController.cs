@@ -48,15 +48,15 @@ public class StlModelController : ControllerBase
     }
 
     [HttpPost("Photo")]
-    public async Task<int> PhotoInsert(int id, int idPhoto, IFormFile photo)
+    public async Task<int> SavePhoto(int id, IFormFile photo)
     {
-        return await repository.SavePhotos(id, idPhoto, false, photo);
+        return await repository.SavePhoto(id, photo);
     }
 
-    [HttpPut("Photo")]
-    public async Task<int> PhotoUpdate(int id, int idPhoto, IFormFile photo)
+    [HttpDelete("Photo")]
+    public async Task<int> PhotoDelete(int id)
     {
-        return await repository.SavePhotos(id, idPhoto, true, photo);
+        return await repository.DeletePhoto(id);
     }
     
     [HttpPut]
