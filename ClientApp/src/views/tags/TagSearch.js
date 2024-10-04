@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   CCard,
@@ -12,6 +12,7 @@ import {
   CTable,
   CForm,
   CCallout,
+  CToaster,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilCaretTop, cilCaretBottom, cilPencil, cilTrash } from '@coreui/icons'
@@ -19,6 +20,7 @@ import ModalWindow from '../../components/ModalComponent'
 import { useGetTags, useDeleteTag } from '../../network/hooks/tag'
 import { defaultTag, defaultDelete } from '../../defaults/tag'
 import { actionColumns, routeNames } from '../../defaults/global'
+import Toast from '../../components/ToastComponent'
 
 const TagSearch = () => {
   let tagObject = defaultTag
@@ -31,6 +33,10 @@ const TagSearch = () => {
   const [visibleDeleteModal, setVisibleDeleteModal] = useState(false)
   const [name, setName] = useState('')
   const [deleteData, setDeleteData] = useState(deleteObj)
+  const [toast, addToast] = useState(0)
+  const toaster = useRef()
+  const resultToast = (message, color) =>
+    addToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
 
   const handleName = (event) => setName(event.target.value)
   const handleSearch = () => {
@@ -52,7 +58,13 @@ const TagSearch = () => {
     setVisibleDeleteModal(visible)
   }
   const deleteElement = () => {
-    deleteTag(deleteObj.id).then(() => refreshTags())
+    deleteTag(deleteObj.id).then(
+      () => {
+        refreshTags()
+        resultToast(`La etiqueta '${deleteObj.name}' se ha borrado correctamente`, 'primary')
+      },
+      () => resultToast(`Hubo un problema al borrar la etiqueta '${deleteObj.name}'`, 'danger'),
+    )
     toggleDeleteModal(false)
   }
 
@@ -154,6 +166,7 @@ const TagSearch = () => {
         isOpen={visibleDeleteModal}
         closeDeleteModal={toggleDeleteModal}
       />
+      <CToaster className="p-3" placement="top-end" push={toast} ref={toaster} />
     </CRow>
   )
 }

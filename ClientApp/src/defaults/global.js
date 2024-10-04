@@ -6,15 +6,14 @@ const actionColumns = [
     _style: { width: '10%' },
   },
 ]
-
 const pages = ['models', 'patreons', 'tags']
 const routeNames = {}
 const actions = { search: 'search', save: 'save' }
-pages.map((page) => {
+for (let page of pages) {
   routeNames[page] = {
     search: `/${page}/${actions.search}`,
     save: `/${page}/${actions.save}`,
   }
-})
+}
 
 export { actionColumns, routeNames }

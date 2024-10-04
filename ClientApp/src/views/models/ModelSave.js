@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
+import Select from 'react-select'
+import makeAnimated from 'react-select/animated'
+import CreatableSelect from 'react-select/creatable'
 import { useLocation } from 'react-router-dom'
 import {
   useCreateModel,
@@ -7,9 +10,9 @@ import {
   useDeletePhoto,
   useCreatePhoto,
 } from '../../network/hooks/model'
-import { useGetPatreons } from '../../network/hooks/patreon'
-import { useGetTags } from '../../network/hooks/tag'
-import { defaultModel, months } from '../../defaults/model'
+import { useGetPatreons, useCreatePatreon } from '../../network/hooks/patreon'
+import { useGetTags, useCreateTag } from '../../network/hooks/tag'
+import { defaultModel, invalidSelectMessage, months } from '../../defaults/model'
 import { defaultPatreon } from '../../defaults/patreon'
 import { defaultTag } from '../../defaults/tag'
 import {
@@ -22,7 +25,6 @@ import {
   CCol,
   CForm,
   CFormInput,
-  CFormSelect,
   CImage,
   CRow,
   CToaster,
@@ -32,15 +34,20 @@ import Toast from '../../components/ToastComponent'
 
 const ModelSave = () => {
   const location = useLocation()
+  const animatedComponents = makeAnimated()
   const { updateModel } = useUpdateModel()
   const { createModel } = useCreateModel()
   const { getPhotos } = useGetPhotos()
   const { deletePhoto } = useDeletePhoto()
   const { createPhoto } = useCreatePhoto()
-  const { patreons } = useGetPatreons(defaultPatreon)
-  const { tags } = useGetTags(defaultTag)
+  const { patreons, refreshPatreons } = useGetPatreons(defaultPatreon)
+  const { createPatreon } = useCreatePatreon()
+  const { tags, refreshTags } = useGetTags(defaultTag)
+  const { createTag } = useCreateTag()
   const [validated, setValidated] = useState(false)
   const [years, setYears] = useState([])
+  const selectClass = useRef({})
+  const selectErrorMessage = useRef({})
   const [model, setModel] = useState(defaultModel)
   const [toast, addToast] = useState(0)
   const toaster = useRef()
@@ -50,6 +57,7 @@ const ModelSave = () => {
   let modelToSave = defaultModel
   let editingModel = location.state !== null
   let method = editingModel ? 'put' : 'post'
+  const selectFormFields = ['Year', 'Month', 'Patreon', 'Tag']
 
   useEffect(() => {
     if (editingModel) {
@@ -67,9 +75,12 @@ const ModelSave = () => {
           TagIdList: [],
         },
       )
+      setModel(modelToSave)
       getPhotos(modelToSave.IdModel).then((photos) => {
-        modelToSave.Image = photos
-        setModel(modelToSave)
+        const { Image, ...rest } = modelToSave
+        const modelWithImages = { Image: photos, ...rest }
+
+        setModel(modelWithImages)
       })
     } else {
       setModel(defaultModel)
@@ -80,40 +91,50 @@ const ModelSave = () => {
     setModel(defaultModel)
   }
   if (years.length === 0) {
-    let yearArray = Array.from({ length: 21 }, (e, i) => i + 2010)
+    let yearArray = Array.from({ length: 21 }, (e, i) => i + 2020).map((option) => {
+      return { value: option, label: option }
+    })
     setYears(yearArray)
   }
 
   const handleName = (event) => {
     const { ModelName, ...rest } = model
-    const modifiedModel = { ModelName: event.target.value, ...rest }
+    const modifiedModel = { ModelName: event?.target.value, ...rest }
     setModel(modifiedModel)
   }
   const handleYear = (event) => {
     const { Year, ...rest } = model
-    const modifiedModel = { Year: event.target.value, ...rest }
+    const sentData = event?.value || event?.target.innerText || 0
+    const modifiedModel = { Year: sentData, ...rest }
     setModel(modifiedModel)
+    validateSelects(sentData, validated, 'year')
   }
   const handleMonth = (event) => {
     const { Month, ...rest } = model
-    const modifiedModel = { Month: event.target.value, ...rest }
+    const sentData = event?.value || event?.target.innerText || 0
+    const modifiedModel = { Month: sentData, ...rest }
     setModel(modifiedModel)
+    validateSelects(sentData, validated, 'month')
   }
   const handlePatreon = (event) => {
     const { Patreon, ...rest } = model
-    const modifiedModel = { Patreon: { IdPatreon: event.target.value }, ...rest }
+    const sentData = event?.value || event?.target.innerText || 0
+    const modifiedModel = { Patreon: { IdPatreon: sentData }, ...rest }
+    validateSelects(sentData, validated, 'patreon')
     setModel(modifiedModel)
   }
   const handleTag = (event) => {
     const { Tag, ...rest } = model
     let selectedTags = []
-    for (let tag of event.target.options) {
-      if (tag.selected) selectedTags.push({ IdTag: tag.value, TagName: tag.text })
+    for (let tag of event) {
+      selectedTags.push({ IdTag: tag.value, TagName: '' })
     }
     const modifiedModel = {
       Tag: selectedTags,
       ...rest,
     }
+    const firstValue = selectedTags.length == 0 ? 0 : selectedTags[0].IdTag
+    validateSelects(firstValue, validated, 'tag')
     setModel(modifiedModel)
   }
   const handlePath = (event) => {
@@ -171,11 +192,41 @@ const ModelSave = () => {
       }
     })
   }
+  const checkSelectsAreValid = () => {
+    let allFieldsFilled = true
+    for (let selectField of selectFormFields) {
+      let modelValue
+      switch (selectField) {
+        case 'Patreon':
+          modelValue = model[selectField].IdPatreon
+          break
+        case 'Tag':
+          modelValue = model[selectField][0].IdTag
+          break
+        default:
+          modelValue = model[selectField]
+          break
+      }
+      allFieldsFilled = allFieldsFilled && modelValue
+      validateSelects(modelValue, true, selectField.toLowerCase())
+    }
+    return allFieldsFilled
+  }
+  const validateSelects = (value, isFormValidated, field) => {
+    if (!isFormValidated) return
+    const displayValue = value ? 'none' : 'block'
+    const classValue = value ? 'valid' : 'error'
+
+    selectErrorMessage.current[field] = {}
+    selectErrorMessage.current[field].display = displayValue
+    selectClass.current[field] = classValue
+  }
   const handleSave = (event) => {
     const form = event.currentTarget
     event.preventDefault()
+    let selectsAreValid = checkSelectsAreValid()
     setValidated(true)
-    if (form.checkValidity() === false) {
+    if (form.checkValidity() === false || selectsAreValid === false) {
       event.stopPropagation()
       return
     }
@@ -187,8 +238,8 @@ const ModelSave = () => {
     } else {
       createModel(model).then(
         () => {
-          setEditingModel(true)
-          setMethod('put')
+          editingModel = true
+          method = 'put'
           setValidated(false)
           resultToast('El modelo se ha creado correctamente', 'primary')
         },
@@ -206,6 +257,26 @@ const ModelSave = () => {
         resultToast('La imagen se ha borrado correctamente', 'primary')
       },
       () => resultToast('Hubo un problema al borrar la imagen', 'danger'),
+    )
+  }
+  const handleCreatePatreon = (patreonName) => {
+    const newPatreon = { IdPatreon: 0, PatreonName: patreonName }
+    createPatreon(newPatreon).then(
+      () => {
+        refreshPatreons()
+        resultToast(`El Patreon '${patreonName}' se ha guardado correctamente`, 'primary')
+      },
+      () => resultToast(`Hubo un problema al guardar el Patreon '${patreonName}'`, 'danger'),
+    )
+  }
+  const handleCreateTag = (tagName) => {
+    const newTag = { IdTag: 0, TagName: tagName }
+    createTag(newTag).then(
+      () => {
+        refreshTags()
+        resultToast(`La etiqueta '${tagName}' se ha guardado correctamente`, 'primary')
+      },
+      () => resultToast(`Hubo un problema al guardar la etiqueta '${tagName}'`, 'danger'),
     )
   }
 
@@ -239,40 +310,51 @@ const ModelSave = () => {
                   />
                 </CCol>
                 <CCol>
-                  <CFormSelect
+                  <Select
                     id="year"
-                    value={model.Year}
+                    classNamePrefix="filter"
+                    className={selectClass.current.year}
+                    options={years}
+                    value={model.Year === 0 ? null : { value: model.Year, label: model.Year }}
+                    isLoading={years.length == 0}
                     onChange={handleYear}
-                    feedbackInvalid="¿De qué año era modelo?"
-                    floatingLabel="Año"
-                    placeholder="Año del Modelo"
-                    required
-                  >
-                    <option value="">Selecciona un año...</option>
-                    {years.map((year) => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    ))}
-                  </CFormSelect>
+                    placeholder="Selecciona un año..."
+                    isClearable={true}
+                    hideSelectedOptions={true}
+                  />
+                  <label className="form-select-label" htmlFor="year">
+                    Año
+                  </label>
+                  <div style={selectErrorMessage.current.year} className={invalidSelectMessage}>
+                    ¿De qué año era el modelo?
+                  </div>
                 </CCol>
                 <CCol>
-                  <CFormSelect
+                  <Select
                     id="month"
-                    value={model.Month}
+                    classNamePrefix="filter"
+                    className={selectClass.current.month}
+                    options={months}
+                    value={
+                      model.Month === 0
+                        ? null
+                        : {
+                            value: model.Month,
+                            label: months.find((month) => month.value === model.Month)?.label,
+                          }
+                    }
+                    isLoading={months.length == 0}
                     onChange={handleMonth}
-                    feedbackInvalid="¿De qué mes era modelo?"
-                    floatingLabel="Mes"
-                    placeholder="Mes del Modelo"
-                    required
-                  >
-                    <option value="">Selecciona un mes...</option>
-                    {months.map((month) => (
-                      <option key={month.value} value={month.value}>
-                        {month.name}
-                      </option>
-                    ))}
-                  </CFormSelect>
+                    placeholder="Selecciona un mes..."
+                    isClearable={true}
+                    hideSelectedOptions={true}
+                  />
+                  <label className="form-select-label" htmlFor="month">
+                    Mes
+                  </label>
+                  <div style={selectErrorMessage.current.month} className={invalidSelectMessage}>
+                    ¿De qué mes era el modelo?
+                  </div>
                 </CCol>
               </CRow>
               <CRow xs={{ gutter: 2 }}>
@@ -290,41 +372,64 @@ const ModelSave = () => {
                   />
                 </CCol>
                 <CCol>
-                  <CFormSelect
+                  <CreatableSelect
                     id="patreon"
-                    value={model.Patreon.IdPatreon}
+                    classNamePrefix="filter"
+                    className={selectClass.current.patreon}
+                    options={patreons.map((patreon) => {
+                      return { value: patreon.IdPatreon, label: patreon.PatreonName }
+                    })}
+                    value={
+                      model.Patreon.IdPatreon === 0
+                        ? null
+                        : { value: model.Patreon.IdPatreon, label: model.Patreon.PatreonName }
+                    }
+                    isLoading={patreons.length == 0}
+                    formatCreateLabel={(term) => `Crear nuevo Patreon '${term}'`}
+                    onCreateOption={handleCreatePatreon}
                     onChange={handlePatreon}
-                    feedbackInvalid="¿Qué es un modelo sin un Patreon?"
-                    floatingLabel="Patreon"
-                    placeholder="Patreon del Modelo"
-                    required
-                  >
-                    <option value="">Selecciona un patreon...</option>
-                    {patreons.map((patreon) => (
-                      <option key={patreon.IdPatreon} value={patreon.IdPatreon}>
-                        {patreon.PatreonName}
-                      </option>
-                    ))}
-                  </CFormSelect>
+                    placeholder="Selecciona un patreon..."
+                    isClearable={true}
+                    hideSelectedOptions={true}
+                  />
+                  <label className="form-select-label" htmlFor="patreon">
+                    Patreon
+                  </label>
+                  <div style={selectErrorMessage.current.patreon} className={invalidSelectMessage}>
+                    Este modelo pertenecerá a algún Patreon...
+                  </div>
                 </CCol>
                 <CCol>
-                  <CFormSelect
+                  <CreatableSelect
                     id="tag"
-                    value={model.Tag.map((tag) => tag.IdTag)}
+                    classNamePrefix="filter"
+                    className={selectClass.current.tag}
+                    components={animatedComponents}
+                    options={tags.map((tag) => {
+                      return { value: tag.IdTag, label: tag.TagName }
+                    })}
+                    value={
+                      model.Tag[0].IdTag === 0
+                        ? null
+                        : model.Tag.map((tag) => {
+                            return { value: tag.IdTag, label: tag.TagName }
+                          })
+                    }
+                    isLoading={tags.length == 0}
+                    formatCreateLabel={(term) => `Crear nueva etiqueta '${term}'`}
+                    onCreateOption={handleCreateTag}
+                    noOptionsMessage={() => 'Ya no hay más etiquetas'}
                     onChange={handleTag}
-                    feedbackInvalid="Vamos a ponerle al menos una etiqueta..."
-                    floatingLabel="Etiqueta"
-                    placeholder="Etiquetas del modelo"
-                    multiple
-                    required
-                  >
-                    <option value="">Selecciona etiquetas...</option>
-                    {tags.map((tag) => (
-                      <option key={tag.IdTag} value={tag.IdTag}>
-                        {tag.TagName}
-                      </option>
-                    ))}
-                  </CFormSelect>
+                    isMulti
+                    placeholder="Selecciona una etiqueta..."
+                    isClearable={true}
+                  />
+                  <label className="form-select-label" htmlFor="tag">
+                    Etiquetas
+                  </label>
+                  <div style={selectErrorMessage.current.tag} className={invalidSelectMessage}>
+                    Vamos a asignarle al menos una etiqueta...
+                  </div>
                 </CCol>
               </CRow>
               <CRow xs={{ gutter: 2 }}>
@@ -369,7 +474,7 @@ const ModelSave = () => {
           </CCardBody>
         </CCard>
       </CCol>
-      <CToaster className="p-3" placement="bottom-end" push={toast} ref={toaster} />
+      <CToaster className="p-3" placement="top-end" push={toast} ref={toaster} />
     </CRow>
   )
 }

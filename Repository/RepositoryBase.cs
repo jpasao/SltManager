@@ -46,7 +46,7 @@ public class RepositoryBase : IRepositoryBase
                 "INSERT INTO patreons (PatreonName) VALUES (@PatreonName)" : 
                 "UPDATE patreons SET PatreonName = @PatreonName WHERE IdPatreon = @IdPatreon";
 
-            return await db.ExecuteAsync(sql, patreon).ConfigureAwait(false);            
+            return await db.ExecuteAsync(sql, patreon).ConfigureAwait(false);
         }
         catch (Exception)
         {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   CCard,
@@ -12,6 +12,7 @@ import {
   CTable,
   CForm,
   CCallout,
+  CToaster,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilCaretTop, cilCaretBottom, cilPencil, cilTrash } from '@coreui/icons'
@@ -19,6 +20,7 @@ import ModalWindow from '../../components/ModalComponent'
 import { useGetPatreons, useDeletePatreon } from '../../network/hooks/patreon'
 import { defaultPatreon, defaultDelete } from '../../defaults/patreon'
 import { actionColumns, routeNames } from '../../defaults/global'
+import Toast from '../../components/ToastComponent'
 
 const PatreonSearch = () => {
   let patreonObject = defaultPatreon
@@ -31,6 +33,10 @@ const PatreonSearch = () => {
   const [visibleDeleteModal, setVisibleDeleteModal] = useState(false)
   const [name, setName] = useState('')
   const [deleteData, setDeleteData] = useState(deleteObj)
+  const [toast, addToast] = useState(0)
+  const toaster = useRef()
+  const resultToast = (message, color) =>
+    addToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
 
   const handleName = (event) => setName(event.target.value)
   const handleSearch = () => {
@@ -52,7 +58,13 @@ const PatreonSearch = () => {
     setVisibleDeleteModal(visible)
   }
   const deleteElement = () => {
-    deletePatreon(deleteObj.id).then(() => refreshPatreons())
+    deletePatreon(deleteObj.id).then(
+      () => {
+        refreshPatreons()
+        resultToast(`El Patreon '${deleteObj.name}' se ha borrado correctamente`, 'primary')
+      },
+      () => resultToast(`Hubo un problema al borrar el Patreon '${deleteObj.name}'`, 'danger'),
+    )
     toggleDeleteModal(false)
   }
 
@@ -154,6 +166,7 @@ const PatreonSearch = () => {
         isOpen={visibleDeleteModal}
         closeDeleteModal={toggleDeleteModal}
       />
+      <CToaster className="p-3" placement="top-end" push={toast} ref={toaster} />
     </CRow>
   )
 }

@@ -13,7 +13,9 @@ const Toast = (props) => {
       className="align-items-center"
     >
       <div className="d-flex">
-        <CToastBody>{message}</CToastBody>
+        <CToastBody>
+          <div className="text-white">{message}</div>
+        </CToastBody>
         <CToastClose className="me-2 m-auto" />
       </div>
     </CToast>

@@ -21,18 +21,18 @@ const defaultModel = {
 const defaultDelete = { id: 0, name: '', page: 'Modelos' }
 
 const months = [
-  { value: 1, name: 'Enero' },
-  { value: 2, name: 'Febrero' },
-  { value: 3, name: 'Marzo' },
-  { value: 4, name: 'Abril' },
-  { value: 5, name: 'Mayo' },
-  { value: 6, name: 'Junio' },
-  { value: 7, name: 'Julio' },
-  { value: 8, name: 'Agosto' },
-  { value: 9, name: 'Septiembre' },
-  { value: 10, name: 'Octubre' },
-  { value: 11, name: 'Noviembre' },
-  { value: 12, name: 'Diciembre' },
+  { value: 1, label: 'Enero' },
+  { value: 2, label: 'Febrero' },
+  { value: 3, label: 'Marzo' },
+  { value: 4, label: 'Abril' },
+  { value: 5, label: 'Mayo' },
+  { value: 6, label: 'Junio' },
+  { value: 7, label: 'Julio' },
+  { value: 8, label: 'Agosto' },
+  { value: 9, label: 'Septiembre' },
+  { value: 10, label: 'Octubre' },
+  { value: 11, label: 'Noviembre' },
+  { value: 12, label: 'Diciembre' },
 ]
 
 const useStateCallback = (initialState) => {
@@ -53,5 +53,6 @@ const useStateCallback = (initialState) => {
 
   return [state, setStateCallback]
 }
+const invalidSelectMessage = 'invalid-select-message'
 
-export { defaultModel, defaultDelete, months, useStateCallback }
+export { defaultModel, defaultDelete, months, useStateCallback, invalidSelectMessage }

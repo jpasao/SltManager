@@ -1,4 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
+import Select from 'react-select'
+import makeAnimated from 'react-select/animated'
+import CreatableSelect from 'react-select/creatable'
 import { useNavigate } from 'react-router-dom'
 import {
   CCard,
@@ -11,7 +14,6 @@ import {
   CCollapse,
   CTable,
   CForm,
-  CFormSelect,
   CImage,
   CModal,
   CModalHeader,
@@ -24,6 +26,7 @@ import {
   CCardText,
   CBadge,
   CCallout,
+  CToaster,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import {
@@ -41,26 +44,34 @@ import {
   useOpenFolder,
   useGetPhotos,
 } from '../../network/hooks/model'
-import { useGetPatreons } from '../../network/hooks/patreon'
-import { useGetTags } from '../../network/hooks/tag'
+import { useGetPatreons, useCreatePatreon } from '../../network/hooks/patreon'
+import { useGetTags, useCreateTag } from '../../network/hooks/tag'
 import { defaultModel, defaultDelete, months, useStateCallback } from '../../defaults/model'
 import { defaultPatreon } from '../../defaults/patreon'
 import { defaultTag } from '../../defaults/tag'
 import { actionColumns, routeNames } from '../../defaults/global'
 import NoImage from '/no-image.png'
+import Toast from '../../components/ToastComponent'
 
 const ModelSearch = () => {
   let deleteObj = structuredClone(defaultDelete)
+  let selectInputRefYear = useRef()
+  let selectInputRefMonth = useRef()
+  let selectInputRefPatreon = useRef()
+  let selectInputRefTag = useRef()
+  const animatedComponents = makeAnimated()
 
   const navigateTo = useNavigate()
   const [search, setSearch] = useState(defaultModel)
   const { models, refreshModels, isLoading: isFetchingItems } = useGetModels(search)
   const { deleteModel } = useDeleteModel()
   const { modelYears } = useGetModelYears()
-  const { patreons } = useGetPatreons(defaultPatreon)
+  const { patreons, refreshPatreons } = useGetPatreons(defaultPatreon)
+  const { createPatreon } = useCreatePatreon()
   const { getPhotos } = useGetPhotos(0)
   const { openFolder } = useOpenFolder()
-  const { tags } = useGetTags(defaultTag)
+  const { tags, refreshTags } = useGetTags(defaultTag)
+  const { createTag } = useCreateTag()
   const [visible, setVisible] = useState(true)
   const [visibleDeleteModal, setVisibleDeleteModal] = useState(false)
   const [visibleDetailModal, setVisibleDetailModal] = useState(false)
@@ -73,19 +84,29 @@ const ModelSearch = () => {
   const [images, setImages] = useState([])
   const [tag, setTag] = useStateCallback([])
   const [deleteData, setDeleteData] = useState(deleteObj)
+  const [toast, setToast] = useState(0)
+  const toaster = useRef()
+  const resultToast = (message, color) =>
+    setToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
 
   if (years.length === 0 && isFetchingItems) {
-    modelYears().then((data) => setYears(data))
+    modelYears().then((data) => {
+      let yearOptions = [{ value: 0, label: 'Selecciona un año' }]
+      data.map((option) => {
+        yearOptions.push({ value: option, label: option })
+      })
+      setYears(yearOptions)
+    })
   }
 
-  const handleName = (event) => setName(event.target.value)
-  const handleYear = (event) => setYear(event.target.value)
-  const handleMonth = (event) => setMonth(event.target.value)
-  const handlePatreon = (event) => setPatreon(event.target.value)
+  const handleName = (event) => setName(event?.target.value)
+  const handleYear = (event) => setYear(event?.value || event?.target.innerText || 0)
+  const handleMonth = (event) => setMonth(event?.value || event?.target.innerText || 0)
+  const handlePatreon = (event) => setPatreon(event?.value || event?.target.innerText || 0)
   const handleTag = (event) => {
     let selectedTags = []
-    for (let tag of event.target.options) {
-      if (tag.selected) selectedTags.push(tag.value)
+    for (let tag of event) {
+      selectedTags.push(tag.value)
     }
     setTag(selectedTags)
   }
@@ -109,13 +130,21 @@ const ModelSearch = () => {
     }
     setSearch(newSearch)
   }
+  const cleanSearchParams = () => {
+    const defaultClone = JSON.parse(JSON.stringify(defaultModel))
+    setSearch(defaultClone)
+  }
 
   const handleReset = () => {
     setName('')
     setYear(0)
     setMonth(0)
     setPatreon(0)
-    setTag([], refreshSearchParams())
+    selectInputRefYear.current.clearValue()
+    selectInputRefMonth.current.clearValue()
+    selectInputRefPatreon.current.clearValue()
+    selectInputRefTag.current.clearValue()
+    setTag([], cleanSearchParams())
   }
   const handleEdit = (model) => {
     navigateTo(routeNames.models.save, { state: model })
@@ -147,11 +176,31 @@ const ModelSearch = () => {
     return image === null ? NoImage : `data:image/jpeg;base64,${image}`
   }
   const getMonthName = (monthNumber) => {
-    return months.find((month) => month.value === monthNumber)?.name
+    return months.find((month) => month.value === monthNumber)?.label
   }
   const handleOpenFolder = (path) => {
     const pathObj = { path: path }
     openFolder(pathObj)
+  }
+  const handleCreatePatreon = (patreonName) => {
+    const newPatreon = { IdPatreon: 0, PatreonName: patreonName }
+    createPatreon(newPatreon).then(
+      () => {
+        refreshPatreons()
+        resultToast(`El Patreon '${patreonName}' se ha guardado correctamente`, 'primary')
+      },
+      () => resultToast(`Hubo un problema al guardar el Patreon '${patreonName}'`, 'danger'),
+    )
+  }
+  const handleCreateTag = (tagName) => {
+    const newTag = { IdTag: 0, TagName: tagName }
+    createTag(newTag).then(
+      () => {
+        refreshTags()
+        resultToast(`La etiqueta '${tagName}' se ha guardado correctamente`, 'primary')
+      },
+      () => resultToast(`Hubo un problema al guardar la etiqueta '${tagName}'`, 'danger'),
+    )
   }
 
   const columns = [
@@ -275,71 +324,77 @@ const ModelSearch = () => {
                     />
                   </CCol>
                   <CCol>
-                    <CFormSelect
+                    <Select
                       id="year"
-                      value={year}
+                      classNamePrefix="filter"
+                      ref={selectInputRefYear}
+                      options={years}
+                      isLoading={years.length == 0}
                       onChange={handleYear}
-                      floatingLabel="Año"
-                      placeholder="Filtra los modelos por año..."
-                    >
-                      <option value="0">Selecciona un año...</option>
-                      {years.map((year) => (
-                        <option key={year} value={year}>
-                          {year}
-                        </option>
-                      ))}
-                    </CFormSelect>
+                      placeholder="Selecciona un año..."
+                      isClearable={true}
+                    />
+                    <label className="form-select-label" htmlFor="year">
+                      Año
+                    </label>
                   </CCol>
                   <CCol>
-                    <CFormSelect
+                    <Select
                       id="month"
-                      value={month}
+                      classNamePrefix="filter"
+                      ref={selectInputRefMonth}
+                      options={months}
+                      isLoading={months.length == 0}
                       onChange={handleMonth}
-                      floatingLabel="Mes"
-                      placeholder="Filtra los modelos por mes..."
-                    >
-                      <option value="0">Selecciona un mes...</option>
-                      {months.map((month) => (
-                        <option key={month.value} value={month.value}>
-                          {month.name}
-                        </option>
-                      ))}
-                    </CFormSelect>
+                      placeholder="Selecciona un mes..."
+                      isClearable={true}
+                    />
+                    <label className="form-select-label" htmlFor="month">
+                      Mes
+                    </label>
                   </CCol>
                 </CRow>
                 <CRow xs={{ gutter: 2 }}>
                   <CCol>
-                    <CFormSelect
+                    <CreatableSelect
                       id="patreon"
-                      value={patreon}
+                      classNamePrefix="filter"
+                      ref={selectInputRefPatreon}
+                      options={patreons.map((patreon) => {
+                        return { value: patreon.IdPatreon, label: patreon.PatreonName }
+                      })}
+                      isLoading={patreons.length == 0}
+                      formatCreateLabel={(term) => `Crear nuevo Patreon '${term}'`}
+                      onCreateOption={handleCreatePatreon}
                       onChange={handlePatreon}
-                      floatingLabel="Patreon"
-                      placeholder="Filtra los modelos por patreon..."
-                    >
-                      <option value="0">Selecciona un patreon...</option>
-                      {patreons.map((patreon) => (
-                        <option key={patreon.IdPatreon} value={patreon.IdPatreon}>
-                          {patreon.PatreonName}
-                        </option>
-                      ))}
-                    </CFormSelect>
+                      placeholder="Selecciona un patreon..."
+                      isClearable={true}
+                    />
+                    <label className="form-select-label" htmlFor="patreon">
+                      Patreon
+                    </label>
                   </CCol>
                   <CCol>
-                    <CFormSelect
+                    <CreatableSelect
                       id="tag"
-                      value={tag}
+                      classNamePrefix="filter"
+                      ref={selectInputRefTag}
+                      components={animatedComponents}
+                      options={tags.map((tag) => {
+                        return { value: tag.IdTag, label: tag.TagName }
+                      })}
+                      isLoading={tags.length == 0}
+                      formatCreateLabel={(term) => `Crear nueva etiqueta '${term}'`}
+                      onCreateOption={handleCreateTag}
+                      noOptionsMessage={() => 'Ya no hay más etiquetas'}
                       onChange={handleTag}
-                      multiple
-                      floatingLabel="Etiqueta"
-                      placeholder="Filtra los modelos por etiqueta..."
-                    >
-                      <option value="0">Selecciona una etiqueta...</option>
-                      {tags.map((tag) => (
-                        <option key={tag.IdTag} value={tag.IdTag}>
-                          {tag.TagName}
-                        </option>
-                      ))}
-                    </CFormSelect>
+                      isMulti
+                      placeholder="Selecciona una etiqueta..."
+                      isClearable={true}
+                    />
+                    <label className="form-select-label" htmlFor="tag">
+                      Etiquetas
+                    </label>
                   </CCol>
                   <CCol>
                     <CButton
@@ -435,6 +490,7 @@ const ModelSearch = () => {
         isOpen={visibleDeleteModal}
         closeDeleteModal={toggleDeleteModal}
       />
+      <CToaster className="p-3" placement="top-end" push={toast} ref={toaster} />
     </CRow>
   )
 }
