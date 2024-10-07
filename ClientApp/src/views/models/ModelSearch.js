@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react'
-import Select from 'react-select'
 import makeAnimated from 'react-select/animated'
 import CreatableSelect from 'react-select/creatable'
 import { useNavigate } from 'react-router-dom'
@@ -39,7 +38,6 @@ import {
 import ModalWindow from '../../components/ModalComponent'
 import {
   useGetModels,
-  useGetModelYears,
   useDeleteModel,
   useOpenFolder,
   useGetPhotos,
@@ -55,8 +53,6 @@ import Toast from '../../components/ToastComponent'
 
 const ModelSearch = () => {
   let deleteObj = structuredClone(defaultDelete)
-  let selectInputRefYear = useRef()
-  let selectInputRefMonth = useRef()
   let selectInputRefPatreon = useRef()
   let selectInputRefTag = useRef()
   const animatedComponents = makeAnimated()
@@ -65,7 +61,6 @@ const ModelSearch = () => {
   const [search, setSearch] = useState(defaultModel)
   const { models, refreshModels, isLoading: isFetchingItems } = useGetModels(search)
   const { deleteModel } = useDeleteModel()
-  const { modelYears } = useGetModelYears()
   const { patreons, refreshPatreons } = useGetPatreons(defaultPatreon)
   const { createPatreon } = useCreatePatreon()
   const { getPhotos } = useGetPhotos(0)
@@ -76,9 +71,6 @@ const ModelSearch = () => {
   const [visibleDeleteModal, setVisibleDeleteModal] = useState(false)
   const [visibleDetailModal, setVisibleDetailModal] = useState(false)
   const [name, setName] = useState('')
-  const [year, setYear] = useState(0)
-  const [years, setYears] = useState([])
-  const [month, setMonth] = useState(0)
   const [patreon, setPatreon] = useState(0)
   const [model, setModel] = useState(defaultModel)
   const [images, setImages] = useState([])
@@ -89,19 +81,9 @@ const ModelSearch = () => {
   const resultToast = (message, color) =>
     setToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
 
-  if (years.length === 0 && isFetchingItems) {
-    modelYears().then((data) => {
-      let yearOptions = [{ value: 0, label: 'Selecciona un año' }]
-      data.map((option) => {
-        yearOptions.push({ value: option, label: option })
-      })
-      setYears(yearOptions)
-    })
+  const handleName = (event) => {
+    setName(event?.target.value)
   }
-
-  const handleName = (event) => setName(event?.target.value)
-  const handleYear = (event) => setYear(event?.value || event?.target.innerText || 0)
-  const handleMonth = (event) => setMonth(event?.value || event?.target.innerText || 0)
   const handlePatreon = (event) => setPatreon(event?.value || event?.target.innerText || 0)
   const handleTag = (event) => {
     let selectedTags = []
@@ -120,8 +102,8 @@ const ModelSearch = () => {
     const newSearch = {
       ...defaultClone,
       ModelName: name,
-      Year: year,
-      Month: month,
+      Year: 0,
+      Month: 0,
       Patreon: { IdPatreon: patreon },
     }
     if (tag.length) {
@@ -137,11 +119,7 @@ const ModelSearch = () => {
 
   const handleReset = () => {
     setName('')
-    setYear(0)
-    setMonth(0)
     setPatreon(0)
-    selectInputRefYear.current.clearValue()
-    selectInputRefMonth.current.clearValue()
     selectInputRefPatreon.current.clearValue()
     selectInputRefTag.current.clearValue()
     setTag([], cleanSearchParams())
@@ -324,38 +302,6 @@ const ModelSearch = () => {
                     />
                   </CCol>
                   <CCol>
-                    <Select
-                      id="year"
-                      classNamePrefix="filter"
-                      ref={selectInputRefYear}
-                      options={years}
-                      isLoading={years.length == 0}
-                      onChange={handleYear}
-                      placeholder="Selecciona un año..."
-                      isClearable={true}
-                    />
-                    <label className="form-select-label" htmlFor="year">
-                      Año
-                    </label>
-                  </CCol>
-                  <CCol>
-                    <Select
-                      id="month"
-                      classNamePrefix="filter"
-                      ref={selectInputRefMonth}
-                      options={months}
-                      isLoading={months.length == 0}
-                      onChange={handleMonth}
-                      placeholder="Selecciona un mes..."
-                      isClearable={true}
-                    />
-                    <label className="form-select-label" htmlFor="month">
-                      Mes
-                    </label>
-                  </CCol>
-                </CRow>
-                <CRow xs={{ gutter: 2 }}>
-                  <CCol>
                     <CreatableSelect
                       id="patreon"
                       classNamePrefix="filter"
@@ -396,7 +342,18 @@ const ModelSearch = () => {
                       Etiquetas
                     </label>
                   </CCol>
-                  <CCol>
+                </CRow>
+                <CRow>
+                  <CCol sm={8}></CCol>
+                  <CCol sm={4}>
+                    <CButton
+                      color="primary"
+                      className="alignRight"
+                      type="submit"
+                      disabled={isFetchingItems}
+                    >
+                      Buscar
+                    </CButton>
                     <CButton
                       as="input"
                       type="reset"
@@ -404,14 +361,6 @@ const ModelSearch = () => {
                       value="Limpiar"
                       onClick={handleReset}
                     />
-                    <CButton
-                      color="primary"
-                      className="alignRight"
-                      onClick={handleSearch}
-                      disabled={isFetchingItems}
-                    >
-                      Buscar
-                    </CButton>
                   </CCol>
                 </CRow>
               </CCollapse>
