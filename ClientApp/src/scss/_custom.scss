@@ -10,7 +10,10 @@
 }
 .fittedImageHeight {
     height: 420px;
-    overflow: auto;
+    padding-top: 20px;
+}
+.fittedImageHeight img {
+  border-radius: var(--cui-border-radius);
 }
 .imageThumbnails span img {
     border-radius: var(--cui-border-radius);

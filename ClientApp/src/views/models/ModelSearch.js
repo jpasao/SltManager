@@ -443,15 +443,19 @@ const ModelSearch = () => {
         </CModalHeader>
         <CModalBody>
           <CCard className="w-100">
-            <CCarousel controls indicators interval={false} transition="crossfade">
+            <CCarousel
+              controls={images.length > 1}
+              indicators={images.length > 1}
+              interval={false}
+              dark
+            >
               {images.length === 0 ? (
                 <CCarouselItem key={0} className="fittedImageHeight">
                   <CImage
                     className="d-block"
                     align="center"
                     src={setImage(null)}
-                    height={600}
-                    fluid
+                    height={400}
                     alt="Sin imagen"
                   />
                 </CCarouselItem>
@@ -462,8 +466,7 @@ const ModelSearch = () => {
                       className="d-block"
                       align="center"
                       src={setImage(photo.Image)}
-                      height={600}
-                      fluid
+                      height={400}
                       alt={`Imagen ${index + 1}`}
                     />
                   </CCarouselItem>
