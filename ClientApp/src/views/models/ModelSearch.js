@@ -36,35 +36,36 @@ import {
   cilFeaturedPlaylist,
 } from '@coreui/icons'
 import ModalWindow from '../../components/ModalComponent'
-import {
-  useGetModels,
-  useDeleteModel,
-  useOpenFolder,
-  useGetPhotos,
-} from '../../network/hooks/model'
+import { useGetModels, useDeleteModel, useGetPhotos } from '../../network/hooks/model'
 import { useGetPatreons, useCreatePatreon } from '../../network/hooks/patreon'
+import { useGetCollections, useCreateCollection } from '../../network/hooks/collection'
 import { useGetTags, useCreateTag } from '../../network/hooks/tag'
-import { defaultModel, defaultDelete, months, useStateCallback } from '../../defaults/model'
+import { defaultModel, defaultDelete, months, useStateCallback, hubUrl } from '../../defaults/model'
 import { defaultPatreon } from '../../defaults/patreon'
+import { defaultCollection } from '../../defaults/collection'
 import { defaultTag } from '../../defaults/tag'
 import { actionColumns, routeNames } from '../../defaults/global'
 import NoImage from '/no-image.png'
 import Toast from '../../components/ToastComponent'
+import * as signalR from '@microsoft/signalr'
 
 const ModelSearch = () => {
   let deleteObj = structuredClone(defaultDelete)
   let selectInputRefPatreon = useRef()
+  let selectInputRefCollection = useRef()
   let selectInputRefTag = useRef()
   const animatedComponents = makeAnimated()
 
   const navigateTo = useNavigate()
   const [search, setSearch] = useState(defaultModel)
+  const [searchCollection, setSearchCollection] = useState(defaultCollection)
   const { models, refreshModels, isLoading: isFetchingItems } = useGetModels(search)
   const { deleteModel } = useDeleteModel()
   const { patreons, refreshPatreons } = useGetPatreons(defaultPatreon)
   const { createPatreon } = useCreatePatreon()
+  const { collections, refreshCollections } = useGetCollections(searchCollection)
+  const { createCollection } = useCreateCollection()
   const { getPhotos } = useGetPhotos(0)
-  const { openFolder } = useOpenFolder()
   const { tags, refreshTags } = useGetTags(defaultTag)
   const { createTag } = useCreateTag()
   const [visible, setVisible] = useState(true)
@@ -72,19 +73,37 @@ const ModelSearch = () => {
   const [visibleDetailModal, setVisibleDetailModal] = useState(false)
   const [name, setName] = useState('')
   const [patreon, setPatreon] = useState(0)
+  const [collection, setCollection] = useState(0)
   const [model, setModel] = useState(defaultModel)
   const [images, setImages] = useState([])
   const [tag, setTag] = useStateCallback([])
   const [deleteData, setDeleteData] = useState(deleteObj)
   const [toast, setToast] = useState(0)
   const toaster = useRef()
+
+  const connection = new signalR.HubConnectionBuilder()
+    .withUrl(hubUrl)
+    .withAutomaticReconnect()
+    .build()
+  connection.start()
+
   const resultToast = (message, color) =>
     setToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
 
   const handleName = (event) => {
     setName(event?.target.value)
   }
-  const handlePatreon = (event) => setPatreon(event?.value || event?.target.innerText || 0)
+  const handlePatreon = (event) => {
+    const selectedPatreon = event?.value || event?.target.innerText || 0
+    setPatreon(selectedPatreon)
+    const defaultCollectionClone = JSON.parse(JSON.stringify(defaultCollection))
+    const newCollectionSearch = {
+      ...defaultCollectionClone,
+      Patreon: { IdPatreon: selectedPatreon },
+    }
+    setSearchCollection(newCollectionSearch, refreshCollections())
+  }
+  const handleCollection = (event) => setCollection(event?.value || event?.target.innerText || 0)
   const handleTag = (event) => {
     let selectedTags = []
     for (let tag of event) {
@@ -105,6 +124,7 @@ const ModelSearch = () => {
       Year: 0,
       Month: 0,
       Patreon: { IdPatreon: patreon },
+      Collection: collection,
     }
     if (tag.length) {
       newSearch.Tag.length = 0
@@ -121,6 +141,7 @@ const ModelSearch = () => {
     setName('')
     setPatreon(0)
     selectInputRefPatreon.current.clearValue()
+    selectInputRefCollection.current.clearValue()
     selectInputRefTag.current.clearValue()
     setTag([], cleanSearchParams())
   }
@@ -157,8 +178,7 @@ const ModelSearch = () => {
     return months.find((month) => month.value === monthNumber)?.label
   }
   const handleOpenFolder = (path) => {
-    const pathObj = { path: path }
-    openFolder(pathObj)
+    connection.invoke('SendPath', path)
   }
   const handleCreatePatreon = (patreonName) => {
     const newPatreon = { IdPatreon: 0, PatreonName: patreonName }
@@ -168,6 +188,21 @@ const ModelSearch = () => {
         resultToast(`El Patreon '${patreonName}' se ha guardado correctamente`, 'primary')
       },
       () => resultToast(`Hubo un problema al guardar el Patreon '${patreonName}'`, 'danger'),
+    )
+  }
+  const handleCreateCollection = (collectionName) => {
+    if (patreon === 0) return
+    const newCollection = {
+      IdCollection: 0,
+      Patreon: { IdPatreon: patreon },
+      CollectionName: collectionName,
+    }
+    createCollection(newCollection).then(
+      () => {
+        refreshCollections()
+        resultToast(`La colección '${collectionName}' se ha guardado correctamente`, 'primary')
+      },
+      () => resultToast(`Hubo un problema al guardar la colección '${collectionName}'`, 'danger'),
     )
   }
   const handleCreateTag = (tagName) => {
@@ -257,10 +292,6 @@ const ModelSearch = () => {
       ),
     },
     {
-      name: 'Patreon:',
-      data: model.Patreon?.PatreonName,
-    },
-    {
       name: 'Etiquetas:',
       data: model.Tag?.map((tag) => (
         <CBadge key={tag.IdTag} color="secondary" style={{ marginRight: '5px' }}>
@@ -268,7 +299,17 @@ const ModelSearch = () => {
         </CBadge>
       )),
     },
+    {
+      name: 'Patreon:',
+      data: model.Patreon?.PatreonName,
+    },
   ]
+  if (model.IdCollection !== 0) {
+    detailItems.push({
+      name: 'Colección:',
+      data: collections.find((col) => col.IdCollection === model.IdCollection).CollectionName,
+    })
+  }
 
   return (
     <CRow>
@@ -322,6 +363,31 @@ const ModelSearch = () => {
                   </CCol>
                   <CCol>
                     <CreatableSelect
+                      id="collection"
+                      classNamePrefix="filter"
+                      ref={selectInputRefCollection}
+                      options={collections.map((collection) => {
+                        return { value: collection.IdCollection, label: collection.CollectionName }
+                      })}
+                      isLoading={collections.length == 0}
+                      formatCreateLabel={(term) => {
+                        return patreon === 0
+                          ? `Elije antes un Patreon para crear '${term}'`
+                          : `Crear nueva colección '${term}' para '${patreons.find((pat) => pat.IdPatreon === patreon).PatreonName}'`
+                      }}
+                      onCreateOption={handleCreateCollection}
+                      onChange={handleCollection}
+                      placeholder="Selecciona una colección..."
+                      isClearable={true}
+                    />
+                    <label className="form-select-label" htmlFor="patreon">
+                      Colección
+                    </label>
+                  </CCol>
+                </CRow>
+                <CRow>
+                  <CCol sm={4}>
+                    <CreatableSelect
                       id="tag"
                       classNamePrefix="filter"
                       ref={selectInputRefTag}
@@ -342,9 +408,7 @@ const ModelSearch = () => {
                       Etiquetas
                     </label>
                   </CCol>
-                </CRow>
-                <CRow>
-                  <CCol sm={8}></CCol>
+                  <CCol sm={4}></CCol>
                   <CCol sm={4}>
                     <CButton
                       color="primary"

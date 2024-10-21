@@ -23,12 +23,6 @@ public class StlModelController : ControllerBase
         return await repository.GetModelYears();
     }
 
-    [HttpPost("OpenFolder")]
-    public async Task OpenFolder(PathObj path)
-    {
-        await repository.OpenFolder(path.path);
-    }
-
     [HttpPost("Get")]
     public async Task<IEnumerable<StlModel>> Get(StlModel model)
     {

@@ -5,8 +5,6 @@ const modelResource = 'StlModel'
 export const getModels = (modelObj) =>
   api.post(`${modelResource}/Get`, modelObj).then((data) => data.json())
 
-export const openFolder = (modelObj) => api.post(`${modelResource}/OpenFolder`, modelObj)
-
 export const getModelYears = () =>
   api.get(`${modelResource}/ModelYears`).then((data) => data.json())
 

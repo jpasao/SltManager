@@ -85,6 +85,7 @@
   }
   &__multi-value__label, &__multi-value {
     background-color: var(--cui-secondary-bg) !important;
+    color: var(--cui-body-color) !important;
   }
   &__multi-value__remove:hover {
     background-color: var(--cui-secondary) !important;

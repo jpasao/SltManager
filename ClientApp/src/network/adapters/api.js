@@ -1,4 +1,5 @@
-const basePath = 'http://localhost:5003'
+import { serverUrl } from '../../defaults/global'
+const basePath = serverUrl
 
 const api = {
   get: (endpoint) => fetch(`${basePath}/${endpoint}`),

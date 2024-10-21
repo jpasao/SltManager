@@ -28,13 +28,6 @@ export const useGetModelYears = () => {
   return { modelYears }
 }
 
-export const useOpenFolder = () => {
-  const openFolder = (path) => {
-    return modelService.openFolder(path)
-  }
-  return { openFolder }
-}
-
 export const useCreateModel = () => {
   const createModel = (modelObject) => {
     return modelService.createModel(modelObject)

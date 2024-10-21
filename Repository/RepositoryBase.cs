@@ -1,11 +1,9 @@
 using System.Data;
-using System.Diagnostics;
 using Dapper;
 using Microsoft.Extensions.Options;
 using MySql.Data.MySqlClient;
 using stl.Code;
 using stl.Models;
-
 
 namespace stl.Repository;
 
@@ -70,6 +68,79 @@ public class RepositoryBase : IRepositoryBase
 
     #endregion
 
+    #region Collection
+
+    public async Task<List<Collection>> SearchCollection(Collection collection)
+    {
+        try
+        {
+            var sql = @"SELECT C.IdCollection, C.CollectionName, P.IdPatreon, P.PatreonName
+                FROM collections C
+                    INNER JOIN patreons P ON C.IdPatreon = P.IdPatreon
+                WHERE (@CollectionName = '' OR C.CollectionName LIKE CONCAT('%', @CollectionName, '%')) AND
+                    (@IdPatreon = 0 OR C.IdPatreon = @IdPatreon)
+                ORDER BY C.CollectionName";
+
+            var collections = (await db.QueryAsync<Collection, Patreon, Collection>(sql, 
+                (collection, patreon) => {
+                    collection.Patreon = patreon;
+                    return collection;
+                }, splitOn: "IdPatreon",
+                param: new 
+                {
+                    collection.IdCollection,
+                    collection.Patreon.IdPatreon,
+                    collection.CollectionName
+                }).ConfigureAwait(false)).AsList();
+            return collections;
+        }
+        catch (Exception)
+        {
+            return new List<Collection>();
+        }
+    }
+
+    public async Task<int> SaveCollection(Collection collection)
+    {
+        try
+        {
+            var sql = (collection.IdCollection == 0) ? 
+                "INSERT INTO collections (IdPatreon, CollectionName) VALUES (@IdPatreon, @CollectionName)" : 
+                @"UPDATE collections SET 
+                    IdPatreon = @IdPatreon,
+                    CollectionName = @CollectionName 
+                WHERE IdCollection = @IdCollection";
+
+            return await db.ExecuteAsync(sql, 
+                new 
+                {
+                    collection.IdCollection,
+                    collection.Patreon.IdPatreon,
+                    collection.CollectionName
+                }).ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            return -1;
+        }
+    }
+
+    public async Task<int> DeleteCollection(int id)
+    {
+        try
+        {
+            var sql = "DELETE FROM collections WHERE IdCollection = @IdCollection";
+
+            return await db.ExecuteAsync(sql, new { IdCollection = id }).ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            return -1;
+        }
+    }
+
+    #endregion
+
     #region Models
 
     public async Task<List<StlModel>> SearchModel(StlModel model)
@@ -82,19 +153,19 @@ public class RepositoryBase : IRepositoryBase
                     M.Year, 
                     M.Month, 
                     M.Path,
+                    M.IdCollection,
                     P.IdPatreon,
                     P.PatreonName,
-                    T.IdTag, 
+                    T.IdTag,
                     T.TagName
                 FROM models M
                     INNER JOIN patreons P ON M.IdPatreon = P.IdPatreon
                     LEFT JOIN modeltags MT ON MT.IdModel = M.IdModel
                     INNER JOIN tags T ON T.IdTag = MT.IdTag                    
                 WHERE (@IdPatreon = 0 OR M.IdPatreon = @IdPatreon) AND
+                    (@IdCollection = 0 OR M.IdCollection = @IdCollection) AND
                     (@NoTags = 1 OR T.IdTag IN @TagIdList) AND
-                    (@ModelName = '' OR M.ModelName LIKE CONCAT('%', @ModelName, '%')) AND
-                    (@Year = 0 OR M.Year = @Year) AND
-                    (@Month = 0 OR M.Month = @Month)
+                    (@ModelName = '' OR M.ModelName LIKE CONCAT('%', @ModelName, '%'))
                 ORDER BY M.ModelName";
 
             var tagList = model.Tag.Select(t => t.IdTag).ToArray();
@@ -109,15 +180,14 @@ public class RepositoryBase : IRepositoryBase
                 }, splitOn: "IdPatreon, IdTag", 
                 param: new {
                     model.Patreon.IdPatreon,
+                    model.IdCollection,
                     model.Tag,
                     model.TagIdList,
                     model.ModelName,
-                    model.NoTags,
-                    model.Year,
-                    model.Month
+                    model.NoTags
                 }).ConfigureAwait(false);
 
-            var results = models                
+            var results = models
                 .GroupBy(p => p.IdModel)
                 .Select(g => 
                 {
@@ -147,13 +217,14 @@ public class RepositoryBase : IRepositoryBase
             bool isNewModel = model.IdModel == 0;
             int modelSave = 0, modelTagDelete = 0, modelTagInsert = 0, modelId = 0;
             var sql = isNewModel ? 
-                "INSERT INTO models (IdPatreon, ModelName, Year, Month, Path) VALUES (@IdPatreon, @ModelName, @Year, @Month, @Path); SELECT LAST_INSERT_ID()" :
-                "UPDATE models SET IdPatreon = @IdPatreon, ModelName = @ModelName, Year = @Year, Month = @Month, Path = @Path WHERE IdModel = @IdModel";
+                "INSERT INTO models (IdPatreon, IdCollection, ModelName, Year, Month, Path) VALUES (@IdPatreon, @IdCollection, @ModelName, @Year, @Month, @Path); SELECT LAST_INSERT_ID()" :
+                "UPDATE models SET IdPatreon = @IdPatreon, IdCollection = @IdCollection, ModelName = @ModelName, Year = @Year, Month = @Month, Path = @Path WHERE IdModel = @IdModel";
             modelSave = await db.ExecuteScalarAsync<int>(sql, 
                 new 
                 {
                     model.IdModel,
                     model.Patreon.IdPatreon,
+                    model.IdCollection,
                     model.ModelName,
                     model.Year,
                     model.Month,                    
@@ -304,14 +375,6 @@ public class RepositoryBase : IRepositoryBase
         {
             return new List<int>();
         }
-    }
-
-    public async Task OpenFolder(string path)
-    {
-        var process = new ProcessStartInfo() {
-            FileName = $"{path}{Path.DirectorySeparatorChar}",
-            UseShellExecute = true};
-        Process.Start(process);
     }
 
     #endregion

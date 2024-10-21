@@ -11,6 +11,8 @@ public class StlModel
 
   public Patreon Patreon { get; set; }
 
+  public int IdCollection { get; set; }
+
   public List<Tag> Tag { get; set; }
 
   public int[] TagIdList { get; set; }

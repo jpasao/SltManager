@@ -9,18 +9,24 @@ import {
   CButton,
   CFormInput,
   CForm,
+  CCallout,
+  CBadge,
 } from '@coreui/react'
 import { useCreatePatreon, useUpdatePatreon } from '../../network/hooks/patreon'
+import { useGetCollections } from '../../network/hooks/collection'
+import { defaultCollection } from '../../defaults/collection'
 import { defaultPatreon } from '../../defaults/patreon'
 import { routeNames } from '../../defaults/global'
 
 const PatreonSave = () => {
+  const patreonCollection = defaultCollection
   const location = useLocation()
   const navigateTo = useNavigate()
   const editingPatreon = location.state !== null
   const method = editingPatreon ? 'put' : 'post'
   const { updatePatreon } = useUpdatePatreon()
   const { createPatreon } = useCreatePatreon()
+  const { collections, refreshCollections } = useGetCollections(patreonCollection)
   const [validated, setValidated] = useState(false)
   const [patreon, setPatreon] = useState(defaultPatreon)
   let patreonToSave = defaultPatreon
@@ -36,6 +42,8 @@ const PatreonSave = () => {
         },
       )
     }
+    patreonCollection.Patreon.IdPatreon = patreonToSave.IdPatreon
+    refreshCollections()
     setPatreon(patreonToSave)
   }, [defaultPatreon])
 
@@ -65,6 +73,21 @@ const PatreonSave = () => {
     const modifiedPatreon = { PatreonName: event.target.value, ...rest }
     setPatreon(modifiedPatreon)
   }
+  const collectionOutput =
+    collections.length === 0 ? (
+      ''
+    ) : (
+      <CCol>
+        <span>Colecciones: </span>
+        <CCallout color="light">
+          {collections.map((collection) => (
+            <CBadge key={collection.IdCollection} color="secondary" style={{ marginRight: '5px' }}>
+              {collection.CollectionName}
+            </CBadge>
+          ))}
+        </CCallout>
+      </CCol>
+    )
 
   return (
     <CRow>
@@ -81,21 +104,28 @@ const PatreonSave = () => {
               method={method}
               onSubmit={handleSave}
             >
-              <CFormInput
-                type="text"
-                id="patreonName"
-                name="patreonName"
-                value={patreon.PatreonName}
-                onChange={handleName}
-                feedbackInvalid="¿Qué es un patreon sin un nombre?"
-                floatingClassName="mb-3"
-                floatingLabel="Nombre"
-                placeholder="Nombre del Patreon"
-                required
-              />
-              <CButton color="primary" className="alignRight" type="submit">
-                Guardar
-              </CButton>
+              <CRow xs={{ gutter: 2 }}>
+                <CCol xs={9}>
+                  <CFormInput
+                    type="text"
+                    id="patreonName"
+                    name="patreonName"
+                    value={patreon.PatreonName}
+                    onChange={handleName}
+                    feedbackInvalid="¿Qué es un patreon sin un nombre?"
+                    floatingClassName="mb-3"
+                    floatingLabel="Nombre"
+                    placeholder="Nombre del Patreon"
+                    required
+                  />
+                </CCol>
+                <CCol xs={3}>
+                  <CButton color="primary" className="alignRight" type="submit">
+                    Guardar
+                  </CButton>
+                </CCol>
+              </CRow>
+              <CRow>{collectionOutput}</CRow>
             </CForm>
           </CCardBody>
         </CCard>

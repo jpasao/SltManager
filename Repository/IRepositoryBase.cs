@@ -14,6 +14,16 @@ internal interface IRepositoryBase
 
     #endregion
 
+    #region Collection
+
+    Task<List<Collection>> SearchCollection(Collection collection);
+
+    Task<int> SaveCollection(Collection collection);
+    
+    Task<int> DeleteCollection(int id);
+
+    #endregion
+
     #region Models
     Task<List<StlModel>> SearchModel(StlModel model);
     
@@ -29,8 +39,6 @@ internal interface IRepositoryBase
 
     Task<List<int>> GetModelYears();
     
-    Task OpenFolder(string path);
-
     #endregion
 
     #region Tags

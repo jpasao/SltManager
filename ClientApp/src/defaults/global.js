@@ -1,3 +1,4 @@
+const serverUrl = 'http://192.168.0.21:5005'
 const actionColumns = [
   {
     key: 'actions',
@@ -6,7 +7,7 @@ const actionColumns = [
     _style: { width: '10%' },
   },
 ]
-const pages = ['models', 'patreons', 'tags']
+const pages = ['models', 'patreons', 'tags', 'collections']
 const routeNames = {}
 const actions = { search: 'search', save: 'save' }
 for (let page of pages) {
@@ -15,5 +16,6 @@ for (let page of pages) {
     save: `/${page}/${actions.save}`,
   }
 }
+const invalidSelectMessage = 'invalid-select-message'
 
-export { actionColumns, routeNames }
+export { actionColumns, routeNames, invalidSelectMessage, serverUrl }

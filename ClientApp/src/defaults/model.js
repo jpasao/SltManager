@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { serverUrl } from './global'
 const defaultModel = {
   IdModel: 0,
   ModelName: '',
@@ -8,6 +9,7 @@ const defaultModel = {
   Patreon: {
     IdPatreon: 0,
   },
+  IdCollection: 0,
   Tag: [
     {
       IdTag: 0,
@@ -53,6 +55,7 @@ const useStateCallback = (initialState) => {
 
   return [state, setStateCallback]
 }
-const invalidSelectMessage = 'invalid-select-message'
 
-export { defaultModel, defaultDelete, months, useStateCallback, invalidSelectMessage }
+const hubUrl = `${serverUrl}/hub`
+
+export { defaultModel, defaultDelete, months, useStateCallback, hubUrl }

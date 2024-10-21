@@ -54,6 +54,11 @@ const AppHeader = () => {
             </CNavLink>
           </CNavItem>
           <CNavItem>
+            <CNavLink to="/collections/search" as={NavLink}>
+              Colecciones
+            </CNavLink>
+          </CNavItem>
+          <CNavItem>
             <CNavLink to="/tags/search" as={NavLink}>
               Etiquetas
             </CNavLink>

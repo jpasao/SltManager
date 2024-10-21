@@ -11,10 +11,13 @@ import {
   useCreatePhoto,
 } from '../../network/hooks/model'
 import { useGetPatreons, useCreatePatreon } from '../../network/hooks/patreon'
+import { useGetCollections, useCreateCollection } from '../../network/hooks/collection'
 import { useGetTags, useCreateTag } from '../../network/hooks/tag'
-import { defaultModel, invalidSelectMessage, months } from '../../defaults/model'
+import { defaultModel, months } from '../../defaults/model'
 import { defaultPatreon } from '../../defaults/patreon'
+import { defaultCollection } from '../../defaults/collection'
 import { defaultTag } from '../../defaults/tag'
+import { invalidSelectMessage } from '../../defaults/global'
 import {
   CBadge,
   CButton,
@@ -42,6 +45,9 @@ const ModelSave = () => {
   const { createPhoto } = useCreatePhoto()
   const { patreons, refreshPatreons } = useGetPatreons(defaultPatreon)
   const { createPatreon } = useCreatePatreon()
+  const [searchCollection, setSearchCollection] = useState(defaultCollection)
+  const { collections, refreshCollections } = useGetCollections(searchCollection)
+  const { createCollection } = useCreateCollection()
   const { tags, refreshTags } = useGetTags(defaultTag)
   const { createTag } = useCreateTag()
   const [validated, setValidated] = useState(false)
@@ -57,11 +63,15 @@ const ModelSave = () => {
   let modelToSave = defaultModel
   let editingModel = location.state !== null
   let method = editingModel ? 'put' : 'post'
-  const selectFormFields = ['Year', 'Month', 'Patreon', 'Tag']
+  const selectFormFields = ['Year', 'Month', 'Patreon', 'Collection', 'Tag']
 
   useEffect(() => {
     if (editingModel) {
       modelToSave = structuredClone(location.state)
+      const selectedTags =
+        modelToSave.Tag.length === 0 || modelToSave.Tag[0].IdTag === 0
+          ? null
+          : modelToSave.Tag.map((tag) => tag.IdTag)
       modelToSave = Object.assign(
         {},
         {
@@ -72,10 +82,12 @@ const ModelSave = () => {
           Month: modelToSave.Month,
           Tag: modelToSave.Tag,
           Patreon: modelToSave.Patreon,
-          TagIdList: [],
+          IdCollection: modelToSave.IdCollection,
+          TagIdList: selectedTags,
         },
       )
       setModel(modelToSave)
+
       getPhotos(modelToSave.IdModel).then((photos) => {
         const { Image, ...rest } = modelToSave
         const modelWithImages = { Image: photos, ...rest }
@@ -122,12 +134,48 @@ const ModelSave = () => {
     const modifiedModel = { Patreon: { IdPatreon: sentData }, ...rest }
     validateSelects(sentData, validated, 'patreon')
     setModel(modifiedModel)
+    const defaultCollectionClone = JSON.parse(JSON.stringify(defaultCollection))
+    const newCollectionSearch = {
+      ...defaultCollectionClone,
+      Patreon: { IdPatreon: selectedPatreon },
+    }
+    setSearchCollection(newCollectionSearch, refreshCollections())
   }
+  const patreonOptions = patreons.map((patreon) => {
+    return { value: patreon.IdPatreon, label: patreon.PatreonName }
+  })
+  const patreonValue =
+    model.Patreon.IdPatreon === 0
+      ? null
+      : { value: model.Patreon.IdPatreon, label: model.Patreon.PatreonName }
+  const handleCollection = (event) => {
+    const { IdCollection, ...rest } = model
+    const sentData = event?.value || event?.target.innerText || 0
+    const modifiedModel = { IdCollection: sentData, ...rest }
+    validateSelects(sentData, validated, 'collection')
+    setModel(modifiedModel)
+  }
+  const collectionOptions = collections.map((collection) => {
+    return { value: collection.IdCollection, label: collection.CollectionName }
+  })
+  const collectionValue =
+    model.IdCollection === 0
+      ? null
+      : {
+          value: model.IdCollection,
+          label:
+            collections.length === 0
+              ? ''
+              : collections.find((col) => col.IdCollection === model.IdCollection).CollectionName,
+        }
   const handleTag = (event) => {
     const { Tag, ...rest } = model
     let selectedTags = []
-    for (let tag of event) {
-      selectedTags.push({ IdTag: tag.value, TagName: '' })
+    for (let option of event) {
+      selectedTags.push({ IdTag: option.value, TagName: option.label })
+    }
+    if (selectedTags.length === 0) {
+      selectedTags.push({ IdTag: 0 })
     }
     const modifiedModel = {
       Tag: selectedTags,
@@ -137,6 +185,15 @@ const ModelSave = () => {
     validateSelects(firstValue, validated, 'tag')
     setModel(modifiedModel)
   }
+  const tagOptions = tags.map((tag) => {
+    return { value: tag.IdTag, label: tag.TagName }
+  })
+  const tagValues =
+    model.Tag[0].IdTag === 0
+      ? null
+      : model.Tag.map((tag) => {
+          return { value: tag.IdTag, label: tag.TagName }
+        })
   const handlePath = (event) => {
     const { Path, ...rest } = model
     const modifiedModel = { Path: event.target.value, ...rest }
@@ -200,6 +257,9 @@ const ModelSave = () => {
         case 'Patreon':
           modelValue = model[selectField].IdPatreon
           break
+        case 'Collection':
+          modelValue = model.IdCollection
+          break
         case 'Tag':
           modelValue = model[selectField][0].IdTag
           break
@@ -210,7 +270,7 @@ const ModelSave = () => {
       allFieldsFilled = allFieldsFilled && modelValue
       validateSelects(modelValue, true, selectField.toLowerCase())
     }
-    return allFieldsFilled
+    return !!allFieldsFilled
   }
   const validateSelects = (value, isFormValidated, field) => {
     if (!isFormValidated) return
@@ -267,6 +327,21 @@ const ModelSave = () => {
         resultToast(`El Patreon '${patreonName}' se ha guardado correctamente`, 'primary')
       },
       () => resultToast(`Hubo un problema al guardar el Patreon '${patreonName}'`, 'danger'),
+    )
+  }
+  const handleCreateCollection = (collectionName) => {
+    if (patreon === 0) return
+    const newCollection = {
+      IdCollection: 0,
+      Patreon: { IdPatreon: model.Patreon.IdPatreon },
+      CollectionName: collectionName,
+    }
+    createCollection(newCollection).then(
+      () => {
+        refreshCollections()
+        resultToast(`La colección '${collectionName}' se ha guardado correctamente`, 'primary')
+      },
+      () => resultToast(`Hubo un problema al guardar la colección '${collectionName}'`, 'danger'),
     )
   }
   const handleCreateTag = (tagName) => {
@@ -376,14 +451,8 @@ const ModelSave = () => {
                     id="patreon"
                     classNamePrefix="filter"
                     className={selectClass.current.patreon}
-                    options={patreons.map((patreon) => {
-                      return { value: patreon.IdPatreon, label: patreon.PatreonName }
-                    })}
-                    value={
-                      model.Patreon.IdPatreon === 0
-                        ? null
-                        : { value: model.Patreon.IdPatreon, label: model.Patreon.PatreonName }
-                    }
+                    options={patreonOptions}
+                    value={patreonValue}
                     isLoading={patreons.length == 0}
                     formatCreateLabel={(term) => `Crear nuevo Patreon '${term}'`}
                     onCreateOption={handleCreatePatreon}
@@ -401,20 +470,43 @@ const ModelSave = () => {
                 </CCol>
                 <CCol>
                   <CreatableSelect
+                    id="collection"
+                    classNamePrefix="filter"
+                    className={selectClass.current.collection}
+                    options={collectionOptions}
+                    value={collectionValue}
+                    isLoading={collections.length == 0}
+                    formatCreateLabel={(term) => {
+                      return model.Patreon.IdPatreon === 0
+                        ? `Elije antes un Patreon para crear '${term}'`
+                        : `Crear nueva colección '${term}' para '${patreon.textContent}'`
+                    }}
+                    onCreateOption={handleCreateCollection}
+                    onChange={handleCollection}
+                    placeholder="Selecciona una colección..."
+                    isClearable={true}
+                    hideSelectedOptions={true}
+                  />
+                  <label className="form-select-label" htmlFor="collection">
+                    Colección
+                  </label>
+                  <div
+                    style={selectErrorMessage.current.collection}
+                    className={invalidSelectMessage}
+                  >
+                    Este modelo pertenecerá a alguna colección...
+                  </div>
+                </CCol>
+              </CRow>
+              <CRow xs={{ gutter: 2 }}>
+                <CCol>
+                  <CreatableSelect
                     id="tag"
                     classNamePrefix="filter"
                     className={selectClass.current.tag}
                     components={animatedComponents}
-                    options={tags.map((tag) => {
-                      return { value: tag.IdTag, label: tag.TagName }
-                    })}
-                    value={
-                      model.Tag[0].IdTag === 0
-                        ? null
-                        : model.Tag.map((tag) => {
-                            return { value: tag.IdTag, label: tag.TagName }
-                          })
-                    }
+                    options={tagOptions}
+                    value={tagValues}
                     isLoading={tags.length == 0}
                     formatCreateLabel={(term) => `Crear nueva etiqueta '${term}'`}
                     onCreateOption={handleCreateTag}
@@ -431,13 +523,12 @@ const ModelSave = () => {
                     Vamos a asignarle al menos una etiqueta...
                   </div>
                 </CCol>
-              </CRow>
-              <CRow xs={{ gutter: 2 }}>
                 <CCol>
                   <CFormInput
                     type="file"
                     id="Image"
-                    label={
+                    floatingClassName="mb-3"
+                    floatingLabel={
                       editingModel
                         ? 'Fotos del modelo'
                         : 'Guarda primero el modelo para añadir fotos'
