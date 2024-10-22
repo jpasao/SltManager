@@ -57,6 +57,6 @@ const useStateCallback = (initialState) => {
 }
 
 const hubUrl = `${serverUrl}/hub`
-const stlRootPath = 'Z:\\'
+const stlRootPath = import.meta.env.VITE_STL_ROOT_PATH
 
 export { defaultModel, defaultDelete, months, useStateCallback, hubUrl, stlRootPath }

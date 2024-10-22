@@ -1,4 +1,4 @@
-const serverUrl = 'http://192.168.0.21:5005'
+const serverUrl = import.meta.env.VITE_SERVER_URL
 const actionColumns = [
   {
     key: 'actions',
