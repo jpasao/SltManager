@@ -57,5 +57,6 @@ const useStateCallback = (initialState) => {
 }
 
 const hubUrl = `${serverUrl}/hub`
+const stlRootPath = 'Z:\\'
 
-export { defaultModel, defaultDelete, months, useStateCallback, hubUrl }
+export { defaultModel, defaultDelete, months, useStateCallback, hubUrl, stlRootPath }

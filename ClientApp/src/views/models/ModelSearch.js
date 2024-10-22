@@ -47,7 +47,7 @@ import { defaultTag } from '../../defaults/tag'
 import { actionColumns, routeNames } from '../../defaults/global'
 import NoImage from '/no-image.png'
 import Toast from '../../components/ToastComponent'
-import * as signalR from '@microsoft/signalr'
+import SignalRConnector from '../../network/adapters/signalr'
 
 const ModelSearch = () => {
   let deleteObj = structuredClone(defaultDelete)
@@ -80,13 +80,7 @@ const ModelSearch = () => {
   const [deleteData, setDeleteData] = useState(deleteObj)
   const [toast, setToast] = useState(0)
   const toaster = useRef()
-
-  const connection = new signalR.HubConnectionBuilder()
-    .withUrl(hubUrl)
-    .withAutomaticReconnect()
-    .build()
-  connection.start()
-
+  const { connection } = SignalRConnector()
   const resultToast = (message, color) =>
     setToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
 
@@ -175,7 +169,7 @@ const ModelSearch = () => {
     return image === null ? NoImage : `data:image/jpeg;base64,${image}`
   }
   const getMonthName = (monthNumber) => {
-    return months.find((month) => month.value === monthNumber)?.label
+    return monthNumber === 0 ? '-' : months.find((month) => month.value === monthNumber)?.label
   }
   const handleOpenFolder = (path) => {
     connection.invoke('SendPath', path)
@@ -245,7 +239,7 @@ const ModelSearch = () => {
       id: model.IdModel,
       name: model.ModelName,
       patreon: model.Patreon.PatreonName,
-      year: model.Year,
+      year: model.Year === 0 ? '-' : model.Year,
       month: model.Month,
       monthName: getMonthName(model.Month),
       actions: (

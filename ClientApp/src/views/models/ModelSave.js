@@ -13,7 +13,7 @@ import {
 import { useGetPatreons, useCreatePatreon } from '../../network/hooks/patreon'
 import { useGetCollections, useCreateCollection } from '../../network/hooks/collection'
 import { useGetTags, useCreateTag } from '../../network/hooks/tag'
-import { defaultModel, months } from '../../defaults/model'
+import { defaultModel, months, stlRootPath } from '../../defaults/model'
 import { defaultPatreon } from '../../defaults/patreon'
 import { defaultCollection } from '../../defaults/collection'
 import { defaultTag } from '../../defaults/tag'
@@ -29,11 +29,13 @@ import {
   CForm,
   CFormInput,
   CImage,
+  CInputGroup,
   CRow,
   CToaster,
 } from '@coreui/react'
 import NoImage from '/no-image.png'
 import Toast from '../../components/ToastComponent'
+import SignalRConnector from '../../network/adapters/signalr'
 
 const ModelSave = () => {
   const location = useLocation()
@@ -57,16 +59,20 @@ const ModelSave = () => {
   const [model, setModel] = useState(defaultModel)
   const [toast, addToast] = useState(0)
   const toaster = useRef()
+  let editingModel = useRef()
+  let method = useRef()
+  const { connection } = SignalRConnector()
+
   const resultToast = (message, color) =>
     addToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
 
   let modelToSave = defaultModel
-  let editingModel = location.state !== null
-  let method = editingModel ? 'put' : 'post'
-  const selectFormFields = ['Year', 'Month', 'Patreon', 'Collection', 'Tag']
-
+  const requiredSelectFields = ['Patreon', 'Tag']
+  method.current = 'put'
   useEffect(() => {
-    if (editingModel) {
+    editingModel.current = location.state !== null
+    method.current = editingModel.current ? 'put' : 'post'
+    if (editingModel.current) {
       modelToSave = structuredClone(location.state)
       const selectedTags =
         modelToSave.Tag.length === 0 || modelToSave.Tag[0].IdTag === 0
@@ -99,11 +105,11 @@ const ModelSave = () => {
     }
   }, [defaultModel])
 
-  if (!editingModel && model.IdModel !== 0) {
+  if (!editingModel.current && model.IdModel !== 0) {
     setModel(defaultModel)
   }
   if (years.length === 0) {
-    let yearArray = Array.from({ length: 21 }, (e, i) => i + 2020).map((option) => {
+    let yearArray = Array.from({ length: 21 }, (e, i) => i + 2019).map((option) => {
       return { value: option, label: option }
     })
     setYears(yearArray)
@@ -130,9 +136,9 @@ const ModelSave = () => {
   }
   const handlePatreon = (event) => {
     const { Patreon, ...rest } = model
-    const sentData = event?.value || event?.target.innerText || 0
-    const modifiedModel = { Patreon: { IdPatreon: sentData }, ...rest }
-    validateSelects(sentData, validated, 'patreon')
+    const selectedPatreon = event?.value || event?.target.innerText || 0
+    const modifiedModel = { Patreon: { IdPatreon: selectedPatreon }, ...rest }
+    validateSelects(selectedPatreon, validated, 'patreon')
     setModel(modifiedModel)
     const defaultCollectionClone = JSON.parse(JSON.stringify(defaultCollection))
     const newCollectionSearch = {
@@ -147,7 +153,10 @@ const ModelSave = () => {
   const patreonValue =
     model.Patreon.IdPatreon === 0
       ? null
-      : { value: model.Patreon.IdPatreon, label: model.Patreon.PatreonName }
+      : {
+          value: model.Patreon.IdPatreon,
+          label: patreons.find((pat) => pat.IdPatreon === model.Patreon.IdPatreon)?.PatreonName,
+        }
   const handleCollection = (event) => {
     const { IdCollection, ...rest } = model
     const sentData = event?.value || event?.target.innerText || 0
@@ -198,6 +207,9 @@ const ModelSave = () => {
     const { Path, ...rest } = model
     const modifiedModel = { Path: event.target.value, ...rest }
     setModel(modifiedModel)
+  }
+  const handleDefaultFolder = () => {
+    connection.invoke('SendPath', stlRootPath)
   }
   const handleImage = (event) => {
     if (event.target.files) {
@@ -251,7 +263,7 @@ const ModelSave = () => {
   }
   const checkSelectsAreValid = () => {
     let allFieldsFilled = true
-    for (let selectField of selectFormFields) {
+    for (let selectField of requiredSelectFields) {
       let modelValue
       switch (selectField) {
         case 'Patreon':
@@ -290,7 +302,7 @@ const ModelSave = () => {
       event.stopPropagation()
       return
     }
-    if (editingModel) {
+    if (editingModel.current) {
       updateModel(model).then(
         () => resultToast('El modelo se ha guardado correctamente', 'primary'),
         () => resultToast('Hubo un problema al guardar el modelo', 'danger'),
@@ -298,8 +310,8 @@ const ModelSave = () => {
     } else {
       createModel(model).then(
         () => {
-          editingModel = true
-          method = 'put'
+          editingModel.current = true
+          method.current = 'put'
           setValidated(false)
           resultToast('El modelo se ha creado correctamente', 'primary')
         },
@@ -360,14 +372,14 @@ const ModelSave = () => {
       <CCol xs={12}>
         <CCard className="mb-4">
           <CCardHeader>
-            <strong>{editingModel ? 'Editar' : 'Crear'}</strong>
+            <strong>{editingModel.current ? 'Editar' : 'Crear'}</strong>
           </CCardHeader>
           <CCardBody>
             <CForm
               className="g-3 needs-validation"
               noValidate
               validated={validated}
-              method={method}
+              method={method.current}
               onSubmit={handleSave}
             >
               <CRow xs={{ gutter: 2 }}>
@@ -434,18 +446,32 @@ const ModelSave = () => {
               </CRow>
               <CRow xs={{ gutter: 2 }}>
                 <CCol>
-                  <CFormInput
-                    type="text"
-                    id="path"
-                    value={model.Path}
-                    onChange={handlePath}
-                    feedbackInvalid="¿Dónde está el modelo?"
-                    floatingClassName="mb-3"
-                    floatingLabel="Ruta"
-                    placeholder="Ruta del Modelo"
-                    required
-                  />
+                  <CInputGroup>
+                    <CButton
+                      type="button"
+                      color="secondary"
+                      variant="outline"
+                      id="button-addon1"
+                      className="mb-3"
+                      onClick={handleDefaultFolder}
+                    >
+                      Abrir carpeta de STL
+                    </CButton>
+                    <CFormInput
+                      type="text"
+                      id="path"
+                      value={model.Path}
+                      onChange={handlePath}
+                      feedbackInvalid="¿Dónde está el modelo?"
+                      floatingClassName="mb-3"
+                      floatingLabel="Ruta"
+                      placeholder="Ruta del Modelo"
+                      required
+                    />
+                  </CInputGroup>
                 </CCol>
+              </CRow>
+              <CRow xs={{ gutter: 2 }}>
                 <CCol>
                   <CreatableSelect
                     id="patreon"
@@ -529,14 +555,16 @@ const ModelSave = () => {
                     id="Image"
                     floatingClassName="mb-3"
                     floatingLabel={
-                      editingModel
+                      editingModel.current
                         ? 'Fotos del modelo'
                         : 'Guarda primero el modelo para añadir fotos'
                     }
-                    disabled={!editingModel}
+                    disabled={!editingModel.current}
                     onChange={handleImage}
                   />
                 </CCol>
+              </CRow>
+              <CRow xs={{ gutter: 2 }}>
                 <CCol>
                   <CButton color="primary" className="alignRight" type="submit">
                     Guardar

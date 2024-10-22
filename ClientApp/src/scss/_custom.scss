@@ -57,6 +57,7 @@
   }
   &__menu, &__menu div div {
     cursor: pointer;
+    z-index: 3 !important;
   }
   &__control {
     border: var(--cui-border-width) solid var(--cui-border-color) !important;
