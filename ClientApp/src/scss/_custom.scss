@@ -38,6 +38,9 @@
     left: -47px;
     margin-right: -23px;
 }
+.cursorPointer:not(.active):not(.disabled) {
+  cursor: pointer;
+}
 // react-select
 .filter {
   &__value-container {
@@ -120,4 +123,21 @@ div.valid div.filter__control {
   background-position: right calc(0.375em + 0.1875rem) center;
   background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
 }
-//End react-select
+// End react-select
+// table row select
+select.tableRow {
+  display: inline;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 0.5rem;
+  font-size: 0.875rem;
+  border-radius: var(--cui-border-radius-sm);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--cui-body-color);
+  background-color: var(--cui-body-bg);
+  border: var(--cui-border-width) solid var(--cui-border-color);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+// End table row select
+

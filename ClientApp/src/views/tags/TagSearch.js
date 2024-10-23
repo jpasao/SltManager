@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   CCard,
@@ -19,8 +19,16 @@ import { cilCaretTop, cilCaretBottom, cilPencil, cilTrash } from '@coreui/icons'
 import ModalWindow from '../../components/ModalComponent'
 import { useGetTags, useDeleteTag } from '../../network/hooks/tag'
 import { defaultTag, defaultDelete } from '../../defaults/tag'
-import { actionColumns, routeNames } from '../../defaults/global'
+import {
+  actionColumns,
+  routeNames,
+  itemsPerTable,
+  getPagedItems,
+  getItemsPerPage,
+  saveItemsPerPage,
+} from '../../defaults/global'
 import Toast from '../../components/ToastComponent'
+import Pager from '../../components/PagerComponent'
 
 const TagSearch = () => {
   let tagObject = defaultTag
@@ -33,10 +41,28 @@ const TagSearch = () => {
   const [visibleDeleteModal, setVisibleDeleteModal] = useState(false)
   const [name, setName] = useState('')
   const [deleteData, setDeleteData] = useState(deleteObj)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const [toast, addToast] = useState(0)
   const toaster = useRef()
   const resultToast = (message, color) =>
     addToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
+
+  useEffect(() => {
+    const savedItemsPerPage = getItemsPerPage()
+    setPager(savedItemsPerPage)
+  }, [])
+
+  const setPager = (itemNumber) => {
+    saveItemsPerPage(itemNumber)
+    setCurrentPage(1)
+    setItemsPerPage(itemNumber)
+  }
+
+  const pagedItems = getPagedItems(tags, currentPage, itemsPerPage)
+  const handleChangeTableRows = (event) => {
+    setPager(event.target.value)
+  }
 
   const handleName = (event) => setName(event.target.value)
   const handleSearch = () => {
@@ -60,6 +86,9 @@ const TagSearch = () => {
   const deleteElement = () => {
     deleteTag(deleteObj.id).then(
       () => {
+        if ((tags.length - 1) % itemsPerPage === 0) {
+          setCurrentPage(1)
+        }
         refreshTags()
         resultToast(`La etiqueta '${deleteObj.name}' se ha borrado correctamente`, 'primary')
       },
@@ -77,7 +106,7 @@ const TagSearch = () => {
     ...actionColumns,
   ]
 
-  const items = tags.map((tag) => {
+  const items = pagedItems.map((tag) => {
     return {
       id: tag.IdTag,
       name: tag.TagName,
@@ -93,6 +122,15 @@ const TagSearch = () => {
       ),
     }
   })
+
+  const pager = tags.length > itemsPerPage && (
+    <Pager
+      itemsPerPage={itemsPerPage}
+      totalItems={tags.length}
+      setCurrentPage={setCurrentPage}
+      currentPage={currentPage}
+    />
+  )
 
   return (
     <CRow>
@@ -150,12 +188,25 @@ const TagSearch = () => {
         <CCard className="mb-4">
           <CCardHeader>
             <strong>Resultados</strong>
+            <label className="alignRight">
+              <span>Filas por página: </span>
+              <select className="tableRow" onChange={handleChangeTableRows} value={itemsPerPage}>
+                {itemsPerTable.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </label>
           </CCardHeader>
           <CCardBody>
             {items.length === 0 && !isFetchingItems ? (
               <CCallout color="light">No aparece nada con esa búsqueda.</CCallout>
             ) : (
-              <CTable striped bordered columns={columns} items={items} />
+              <>
+                <CTable striped bordered columns={columns} items={items} />
+                {pager}
+              </>
             )}
           </CCardBody>
         </CCard>

@@ -18,4 +18,32 @@ for (let page of pages) {
 }
 const invalidSelectMessage = 'invalid-select-message'
 
-export { actionColumns, routeNames, invalidSelectMessage, serverUrl }
+const itemsPerTable = [5, 10, 20, 50, 100]
+const getPagedItems = (items, currentPage, itemsPerPage) => {
+  const lastItemIndex = currentPage * itemsPerPage
+  const firstItemIndex = lastItemIndex - itemsPerPage
+  return items.slice(firstItemIndex, lastItemIndex)
+}
+const saveItemsPerPage = (number) => {
+  localStorage.setItem('itemsPerPage', number)
+}
+const getItemsPerPage = () => {
+  const items = localStorage.getItem('itemsPerPage')
+  if (items === null) {
+    const defaultItems = itemsPerTable[1].toString()
+    saveItemsPerPage(defaultItems)
+    return defaultItems
+  }
+  return items
+}
+
+export {
+  actionColumns,
+  routeNames,
+  invalidSelectMessage,
+  serverUrl,
+  itemsPerTable,
+  getPagedItems,
+  getItemsPerPage,
+  saveItemsPerPage,
+}

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   CCard,
@@ -19,8 +19,16 @@ import { cilCaretTop, cilCaretBottom, cilPencil, cilTrash } from '@coreui/icons'
 import ModalWindow from '../../components/ModalComponent'
 import { useGetPatreons, useDeletePatreon } from '../../network/hooks/patreon'
 import { defaultPatreon, defaultDelete } from '../../defaults/patreon'
-import { actionColumns, routeNames } from '../../defaults/global'
+import {
+  actionColumns,
+  routeNames,
+  itemsPerTable,
+  getPagedItems,
+  getItemsPerPage,
+  saveItemsPerPage,
+} from '../../defaults/global'
 import Toast from '../../components/ToastComponent'
+import Pager from '../../components/PagerComponent'
 
 const PatreonSearch = () => {
   let patreonObject = defaultPatreon
@@ -33,11 +41,28 @@ const PatreonSearch = () => {
   const [visibleDeleteModal, setVisibleDeleteModal] = useState(false)
   const [name, setName] = useState('')
   const [deleteData, setDeleteData] = useState(deleteObj)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const [toast, addToast] = useState(0)
   const toaster = useRef()
   const resultToast = (message, color) =>
     addToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
 
+  useEffect(() => {
+    const savedItemsPerPage = getItemsPerPage()
+    setPager(savedItemsPerPage)
+  }, [])
+
+  const setPager = (itemNumber) => {
+    saveItemsPerPage(itemNumber)
+    setCurrentPage(1)
+    setItemsPerPage(itemNumber)
+  }
+
+  const pagedItems = getPagedItems(patreons, currentPage, itemsPerPage)
+  const handleChangeTableRows = (event) => {
+    setPager(event.target.value)
+  }
   const handleName = (event) => setName(event.target.value)
   const handleSearch = () => {
     patreonObject.PatreonName = name
@@ -60,6 +85,9 @@ const PatreonSearch = () => {
   const deleteElement = () => {
     deletePatreon(deleteObj.id).then(
       () => {
+        if ((patreons.length - 1) % itemsPerPage === 0) {
+          setCurrentPage(1)
+        }
         refreshPatreons()
         resultToast(`El Patreon '${deleteObj.name}' se ha borrado correctamente`, 'primary')
       },
@@ -77,7 +105,7 @@ const PatreonSearch = () => {
     ...actionColumns,
   ]
 
-  const items = patreons.map((patreon) => {
+  const items = pagedItems.map((patreon) => {
     return {
       id: patreon.IdPatreon,
       name: patreon.PatreonName,
@@ -93,6 +121,15 @@ const PatreonSearch = () => {
       ),
     }
   })
+
+  const pager = patreons.length > itemsPerPage && (
+    <Pager
+      itemsPerPage={itemsPerPage}
+      totalItems={patreons.length}
+      setCurrentPage={setCurrentPage}
+      currentPage={currentPage}
+    />
+  )
 
   return (
     <CRow>
@@ -150,12 +187,25 @@ const PatreonSearch = () => {
         <CCard className="mb-4">
           <CCardHeader>
             <strong>Resultados</strong>
+            <label className="alignRight">
+              <span>Filas por página: </span>
+              <select className="tableRow" onChange={handleChangeTableRows} value={itemsPerPage}>
+                {itemsPerTable.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </label>
           </CCardHeader>
           <CCardBody>
             {items.length === 0 && !isFetchingItems ? (
               <CCallout color="light">No aparece nada con esa búsqueda.</CCallout>
             ) : (
-              <CTable striped bordered columns={columns} items={items} />
+              <>
+                <CTable striped bordered columns={columns} items={items} />
+                {pager}
+              </>
             )}
           </CCardBody>
         </CCard>

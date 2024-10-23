@@ -42,7 +42,8 @@ const PatreonSave = () => {
         },
       )
     }
-    patreonCollection.Patreon.IdPatreon = patreonToSave.IdPatreon
+    const idPatreon = patreonToSave.IdPatreon === 0 ? -1 : patreonToSave.IdPatreon
+    patreonCollection.Patreon.IdPatreon = idPatreon
     refreshCollections()
     setPatreon(patreonToSave)
   }, [defaultPatreon])

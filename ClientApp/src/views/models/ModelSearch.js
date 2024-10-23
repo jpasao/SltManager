@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import makeAnimated from 'react-select/animated'
 import CreatableSelect from 'react-select/creatable'
 import { useNavigate } from 'react-router-dom'
@@ -40,14 +40,22 @@ import { useGetModels, useDeleteModel, useGetPhotos } from '../../network/hooks/
 import { useGetPatreons, useCreatePatreon } from '../../network/hooks/patreon'
 import { useGetCollections, useCreateCollection } from '../../network/hooks/collection'
 import { useGetTags, useCreateTag } from '../../network/hooks/tag'
-import { defaultModel, defaultDelete, months, useStateCallback, hubUrl } from '../../defaults/model'
+import { defaultModel, defaultDelete, months, useStateCallback } from '../../defaults/model'
 import { defaultPatreon } from '../../defaults/patreon'
 import { defaultCollection } from '../../defaults/collection'
 import { defaultTag } from '../../defaults/tag'
-import { actionColumns, routeNames } from '../../defaults/global'
+import {
+  actionColumns,
+  routeNames,
+  itemsPerTable,
+  getPagedItems,
+  getItemsPerPage,
+  saveItemsPerPage,
+} from '../../defaults/global'
 import NoImage from '/no-image.png'
 import Toast from '../../components/ToastComponent'
 import SignalRConnector from '../../network/adapters/signalr'
+import Pager from '../../components/PagerComponent'
 
 const ModelSearch = () => {
   let deleteObj = structuredClone(defaultDelete)
@@ -78,11 +86,29 @@ const ModelSearch = () => {
   const [images, setImages] = useState([])
   const [tag, setTag] = useStateCallback([])
   const [deleteData, setDeleteData] = useState(deleteObj)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const [toast, setToast] = useState(0)
   const toaster = useRef()
   const { connection } = SignalRConnector()
   const resultToast = (message, color) =>
     setToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
+
+  useEffect(() => {
+    const savedItemsPerPage = getItemsPerPage()
+    setPager(savedItemsPerPage)
+  }, [])
+
+  const setPager = (itemNumber) => {
+    saveItemsPerPage(itemNumber)
+    setCurrentPage(1)
+    setItemsPerPage(itemNumber)
+  }
+
+  const pagedItems = getPagedItems(models, currentPage, itemsPerPage)
+  const handleChangeTableRows = (event) => {
+    setPager(event.target.value)
+  }
 
   const handleName = (event) => {
     setName(event?.target.value)
@@ -152,7 +178,16 @@ const ModelSearch = () => {
     setVisibleDeleteModal(visible)
   }
   const deleteElement = () => {
-    deleteModel(deleteData.id).then(() => refreshModels())
+    deleteModel(deleteData.id).then(
+      () => {
+        if ((models.length - 1) % itemsPerPage === 0) {
+          setCurrentPage(1)
+        }
+        refreshModels()
+        resultToast(`El modelo '${deleteData.name}' se ha borrado correctamente`, 'primary')
+      },
+      () => resultToast(`Hubo un problema al borrar el modelo '${deleteData.name}'`, 'danger'),
+    )
     toggleDeleteModal(false)
   }
   const handleView = (model) => {
@@ -234,7 +269,7 @@ const ModelSearch = () => {
     ...actionColumns,
   ]
 
-  const items = models.map((model) => {
+  const items = pagedItems.map((model) => {
     return {
       id: model.IdModel,
       name: model.ModelName,
@@ -257,6 +292,15 @@ const ModelSearch = () => {
       ),
     }
   })
+
+  const pager = models.length > itemsPerPage && (
+    <Pager
+      itemsPerPage={itemsPerPage}
+      totalItems={models.length}
+      setCurrentPage={setCurrentPage}
+      currentPage={currentPage}
+    />
+  )
 
   const detailColumns = [
     {
@@ -428,12 +472,25 @@ const ModelSearch = () => {
         <CCard className="mb-4">
           <CCardHeader>
             <strong>Resultados</strong>
+            <label className="alignRight">
+              <span>Filas por página: </span>
+              <select className="tableRow" onChange={handleChangeTableRows} value={itemsPerPage}>
+                {itemsPerTable.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </label>
           </CCardHeader>
           <CCardBody>
             {items.length === 0 && !isFetchingItems ? (
               <CCallout color="light">No aparece nada con esa búsqueda.</CCallout>
             ) : (
-              <CTable striped bordered columns={columns} items={items} />
+              <>
+                <CTable striped bordered columns={columns} items={items} />
+                {pager}
+              </>
             )}
           </CCardBody>
         </CCard>

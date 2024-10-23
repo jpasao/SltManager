@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import CreatableSelect from 'react-select/creatable'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -22,8 +22,16 @@ import { useGetCollections, useDeleteCollection } from '../../network/hooks/coll
 import { useGetPatreons, useCreatePatreon } from '../../network/hooks/patreon'
 import { defaultCollection, defaultDelete } from '../../defaults/collection'
 import { defaultPatreon } from '../../defaults/patreon'
-import { actionColumns, routeNames } from '../../defaults/global'
+import {
+  actionColumns,
+  routeNames,
+  itemsPerTable,
+  getPagedItems,
+  getItemsPerPage,
+  saveItemsPerPage,
+} from '../../defaults/global'
 import Toast from '../../components/ToastComponent'
+import Pager from '../../components/PagerComponent'
 
 const CollectionSearch = () => {
   let deleteObj = defaultDelete
@@ -40,10 +48,28 @@ const CollectionSearch = () => {
   const [name, setName] = useState('')
   const [patreon, setPatreon] = useState(0)
   const [deleteData, setDeleteData] = useState(deleteObj)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
   const [toast, addToast] = useState(0)
   const toaster = useRef()
   const resultToast = (message, color) =>
     addToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
+
+  useEffect(() => {
+    const savedItemsPerPage = getItemsPerPage()
+    setPager(savedItemsPerPage)
+  }, [])
+
+  const setPager = (itemNumber) => {
+    saveItemsPerPage(itemNumber)
+    setCurrentPage(1)
+    setItemsPerPage(itemNumber)
+  }
+
+  const pagedItems = getPagedItems(collections, currentPage, itemsPerPage)
+  const handleChangeTableRows = (event) => {
+    setPager(event.target.value)
+  }
 
   const handleName = (event) => setName(event.target.value)
   const handlePatreon = (event) => setPatreon(event?.value || event?.target.innerText || 0)
@@ -88,6 +114,9 @@ const CollectionSearch = () => {
   const deleteElement = () => {
     deleteCollection(deleteObj.id).then(
       () => {
+        if ((collections.length - 1) % itemsPerPage === 0) {
+          setCurrentPage(1)
+        }
         refreshCollections()
         resultToast(`La colección '${deleteObj.name}' se ha borrado correctamente`, 'primary')
       },
@@ -120,7 +149,7 @@ const CollectionSearch = () => {
     ...actionColumns,
   ]
 
-  const items = collections.map((collection) => {
+  const items = pagedItems.map((collection) => {
     return {
       id: collection.IdCollection,
       name: collection.CollectionName,
@@ -142,6 +171,15 @@ const CollectionSearch = () => {
       ),
     }
   })
+
+  const pager = collections.length > itemsPerPage && (
+    <Pager
+      itemsPerPage={itemsPerPage}
+      totalItems={collections.length}
+      setCurrentPage={setCurrentPage}
+      currentPage={currentPage}
+    />
+  )
 
   return (
     <CRow>
@@ -218,12 +256,25 @@ const CollectionSearch = () => {
         <CCard className="mb-4">
           <CCardHeader>
             <strong>Resultados</strong>
+            <label className="alignRight">
+              <span>Filas por página: </span>
+              <select className="tableRow" onChange={handleChangeTableRows} value={itemsPerPage}>
+                {itemsPerTable.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </label>
           </CCardHeader>
           <CCardBody>
             {items.length === 0 && !isFetchingItems ? (
               <CCallout color="light">No aparece nada con esa búsqueda.</CCallout>
             ) : (
-              <CTable striped bordered columns={columns} items={items} />
+              <>
+                <CTable striped bordered columns={columns} items={items} />
+                {pager}
+              </>
             )}
           </CCardBody>
         </CCard>

@@ -9,7 +9,6 @@ const initialState = {
 const changeState = (state = initialState, { type, ...rest }) => {
   switch (type) {
     case 'set':
-      return { ...state, ...rest }
     case 'connection':
       return { ...state, ...rest }
     default:
