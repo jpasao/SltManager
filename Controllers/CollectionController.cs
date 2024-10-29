@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using stl.Code;
 using stl.Models;
-using stl.Repository;
+using stl.Repositories;
 
 namespace stl.Controllers;
 
@@ -10,11 +10,11 @@ namespace stl.Controllers;
 [Route("[controller]")]
 public class CollectionController : ControllerBase
 {
-    private readonly RepositoryBase repository;
+    private readonly CollectionRepository repository;
 
     public CollectionController(IOptions<ConnectionString> connectionString)
     {
-        repository = new RepositoryBase(connectionString);
+        repository = new CollectionRepository(connectionString);
     }
 
     [HttpPost("Get")]    

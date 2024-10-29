@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Http.Connections;
 using stl;
 using stl.Code;
-using stl.Repository;
+using stl.Repositories;
+using stl.Interfaces;
 
 var policyName = "AllowAll";
 var builder = WebApplication.CreateBuilder(args);
@@ -15,8 +16,14 @@ builder.Host.ConfigureLogging(logging =>
 builder.Services
     .AddControllersWithViews()
     .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = null);
-builder.Services.AddSingleton<RepositoryBase>();
-builder.Services.AddTransient<IRepositoryBase, RepositoryBase>();
+builder.Services.AddSingleton<CollectionRepository>();
+builder.Services.AddTransient<ICollectionRepository, CollectionRepository>();
+builder.Services.AddSingleton<PatreonRepository>();
+builder.Services.AddTransient<IPatreonRepository, PatreonRepository>();
+builder.Services.AddSingleton<StlModelRepository>();
+builder.Services.AddTransient<IStlModelRepository, StlModelRepository>();
+builder.Services.AddSingleton<TagRepository>();
+builder.Services.AddTransient<ITagRepository, TagRepository>();
 builder.Services.AddSignalR();
 builder.Services.AddScoped<PathHub>();
 builder.Services.Configure<ConnectionString>(builder.Configuration.GetSection("ConnectionStrings"));

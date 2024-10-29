@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using stl.Code;
 using stl.Models;
-using stl.Repository;
+using stl.Repositories;
 
 namespace stl.Controllers;
 
@@ -10,11 +10,11 @@ namespace stl.Controllers;
 [Route("[controller]")]
 public class PatreonController : ControllerBase
 {
-    private readonly RepositoryBase repository;
+    private readonly PatreonRepository repository;
 
     public PatreonController(IOptions<ConnectionString> connectionString)
     {
-        repository = new RepositoryBase(connectionString);
+        repository = new PatreonRepository(connectionString);
     }
 
     [HttpPost("Get")]    

@@ -3,151 +3,21 @@ using Dapper;
 using Microsoft.Extensions.Options;
 using MySql.Data.MySqlClient;
 using stl.Code;
+using stl.Interfaces;
 using stl.Models;
+using stl.Utils;
 
-namespace stl.Repository;
+namespace stl.Repositories;
 
-public class RepositoryBase : IRepositoryBase
+public class StlModelRepository : IStlModelRepository
 {
     private readonly IDbConnection db;
     public string ConnectionString { get; set; }
 
-    public RepositoryBase(IOptions<ConnectionString> connectionStrings)
+    public StlModelRepository(IOptions<ConnectionString> connectionStrings)
     {
         db = new MySqlConnection(connectionStrings.Value.STLConnectionString);
     }
-
-    #region Patreon
-
-    public async Task<IResult> SearchPatreon(Patreon patreon)
-    {
-        try
-        {
-            var sql = @"SELECT IdPatreon, PatreonName 
-                FROM patreons 
-                WHERE (@PatreonName = '' OR PatreonName LIKE CONCAT('%', @PatreonName, '%')) 
-                ORDER BY PatreonName";
-            var response = (await db.QueryAsync<Patreon>(sql, patreon).ConfigureAwait(false)).AsList();
-
-            return BuildResponse(response);
-        }
-        catch (Exception ex)
-        {
-            return BuildError(ex);
-        }
-    }
-
-    public async Task<IResult> SavePatreon(Patreon patreon)
-    {
-        try
-        {
-            var sql = (patreon.IdPatreon == 0) ? 
-                "INSERT INTO patreons (PatreonName) VALUES (@PatreonName)" : 
-                "UPDATE patreons SET PatreonName = @PatreonName WHERE IdPatreon = @IdPatreon";
-            var response = await db.ExecuteAsync(sql, patreon).ConfigureAwait(false);
-
-            return BuildResponse(response);
-        }
-        catch (Exception ex)
-        {
-            return BuildError(ex);
-        }
-    }
-
-    public async Task<IResult> DeletePatreon(int id)
-    {
-        try
-        {
-            var sql = "DELETE FROM patreons WHERE IdPatreon = @IdPatreon";
-            var response = await db.ExecuteAsync(sql, new { IdPatreon = id }).ConfigureAwait(false);
-            
-            return BuildResponse(response);
-        }
-        catch (Exception ex)
-        {
-            return BuildError(ex);
-        }
-    }
-
-    #endregion
-
-    #region Collection
-
-    public async Task<IResult> SearchCollection(Collection collection)
-    {
-        try
-        {
-            var sql = @"SELECT C.IdCollection, C.CollectionName, P.IdPatreon, P.PatreonName
-                FROM collections C
-                    INNER JOIN patreons P ON C.IdPatreon = P.IdPatreon
-                WHERE (@CollectionName = '' OR C.CollectionName LIKE CONCAT('%', @CollectionName, '%')) AND
-                    (@IdPatreon = 0 OR C.IdPatreon = @IdPatreon)
-                ORDER BY C.CollectionName";
-
-            var response = (await db.QueryAsync<Collection, Patreon, Collection>(sql,
-                (collection, patreon) => {
-                    collection.Patreon = patreon;
-                    return collection;
-                }, splitOn: "IdPatreon",
-                param: new 
-                {
-                    collection.IdCollection,
-                    collection.Patreon.IdPatreon,
-                    collection.CollectionName
-                }).ConfigureAwait(false)).AsList();
-
-            return BuildResponse(response);
-        }
-        catch (Exception ex)
-        {
-            return BuildError(ex);
-        }
-    }
-
-    public async Task<IResult> SaveCollection(Collection collection)
-    {
-        try
-        {
-            var sql = (collection.IdCollection == 0) ? 
-                "INSERT INTO collections (IdPatreon, CollectionName) VALUES (@IdPatreon, @CollectionName)" : 
-                @"UPDATE collections SET 
-                    IdPatreon = @IdPatreon,
-                    CollectionName = @CollectionName 
-                WHERE IdCollection = @IdCollection";
-            var response = await db.ExecuteAsync(sql, 
-                new 
-                {
-                    collection.IdCollection,
-                    collection.Patreon.IdPatreon,
-                    collection.CollectionName
-                }).ConfigureAwait(false);
-
-            return BuildResponse(response);
-        }
-        catch (Exception ex)
-        {
-            return BuildError(ex);
-        }
-    }
-
-    public async Task<IResult> DeleteCollection(int id)
-    {
-        try
-        {
-            var sql = "DELETE FROM collections WHERE IdCollection = @IdCollection";
-            var response = await db.ExecuteAsync(sql, new { IdCollection = id }).ConfigureAwait(false);
-
-            return BuildResponse(response);
-        }
-        catch (Exception ex)
-        {
-            return BuildError(ex);
-        }
-    }
-
-    #endregion
-
-    #region Models
 
     public async Task<IResult> SearchModel(StlModel model)
     {
@@ -208,11 +78,11 @@ public class RepositoryBase : IRepositoryBase
                 })
                 .AsList();
        
-            return BuildResponse(response);
+            return Response.BuildResponse(response);
         }
         catch (Exception ex)
         {
-            return BuildError(ex);
+            return Response.BuildError(ex);
         }
     }
     
@@ -259,11 +129,11 @@ public class RepositoryBase : IRepositoryBase
             }
             var response = modelSave + modelTagDelete + modelTagInsert;
 
-            return BuildResponse(response);
+            return Response.BuildResponse(response);
         }
         catch (Exception ex)
         {
-            return BuildError(ex);
+            return Response.BuildError(ex);
         }
     }
 
@@ -276,11 +146,11 @@ public class RepositoryBase : IRepositoryBase
                         WHERE idModel = @IdModel";
             var response = (await db.QueryAsync<Photo>(sql, new { IdModel = idModel }).ConfigureAwait(false)).AsList();
             
-            return BuildResponse(response);
+            return Response.BuildResponse(response);
         }
         catch (Exception ex)
         {
-            return BuildError(ex);
+            return Response.BuildError(ex);
         }
     }
 
@@ -290,7 +160,7 @@ public class RepositoryBase : IRepositoryBase
         {
             if (photo == null || photo.Length == 0) 
             {
-                return BuildError(new Exception("No data received"), 400);
+                return Response.BuildError(new Exception("No data received"), 400);
             }
             byte[]? photoBytes = null;
 
@@ -308,11 +178,11 @@ public class RepositoryBase : IRepositoryBase
             string sql = "INSERT INTO photos (IdModel, Image) VALUES (@IdModel, @Photo); SELECT LAST_INSERT_ID()";
             int response = await db.ExecuteScalarAsync<int>(sql, parameters).ConfigureAwait(false);
 
-            return BuildResponse(response);
+            return Response.BuildResponse(response);
         }
         catch (Exception ex)
         {
-            return BuildError(ex);
+            return Response.BuildError(ex);
         }
     }
 
@@ -327,11 +197,11 @@ public class RepositoryBase : IRepositoryBase
                 IdPhoto = idPhoto 
             }).ConfigureAwait(false);
 
-            return BuildResponse(response);  
+            return Response.BuildResponse(response);  
         }
         catch (Exception ex)
         {
-            return BuildError(ex);
+            return Response.BuildError(ex);
         }
     }
 
@@ -354,77 +224,12 @@ public class RepositoryBase : IRepositoryBase
             } 
             var response = modelDelete + modelPhotoDelete;
 
-            return BuildResponse(response);
+            return Response.BuildResponse(response);
         }
         catch (Exception ex)
         {
-            return BuildError(ex);
+            return Response.BuildError(ex);
         }
     }
 
-    #endregion
-
-    #region Tags
-
-    public async Task<IResult> SearchTag(Tag tag)
-    {
-        try
-        {
-            var sql = @"SELECT IdTag, TagName 
-                FROM tags 
-                WHERE (@TagName = '' OR TagName LIKE CONCAT('%', @TagName, '%')) 
-                ORDER BY TagName";
-            var response = (await db.QueryAsync<Tag>(sql, tag).ConfigureAwait(false)).AsList();
-
-            return BuildResponse(response);
-        }
-        catch (Exception ex)
-        {
-            return BuildError(ex);
-        }
-    }
-
-    public async Task<IResult> SaveTag(Tag tag)
-    {
-        try
-        {
-            var sql = (tag.IdTag == 0) ? 
-                "INSERT INTO tags (TagName) VALUES (@TagName)" : 
-                "UPDATE tags SET TagName = @TagName WHERE IdTag = @IdTag";
-            var response = await db.ExecuteAsync(sql, tag).ConfigureAwait(false);
-
-            return BuildResponse(response);
-        }
-        catch (Exception ex)
-        {
-            return BuildError(ex);
-        }
-    }
-
-    public async Task<IResult> DeleteTag(int id)
-    {
-        try
-        {
-            var sql = "DELETE FROM tags WHERE IdTag = @IdTag";
-            var response = await db.ExecuteAsync(sql, new { IdTag = id }).ConfigureAwait(false);
-
-            return BuildResponse(response);
-        }
-        catch (Exception ex)
-        {
-            return BuildError(ex);
-        }        
-    }
-
-    private static IResult BuildResponse(dynamic items)
-    {
-        return Results.Json(items, statusCode: 200);
-    }
-    private static IResult BuildError(Exception ex, int errorCode = 500)
-    {
-        return Results.Json(ex, statusCode: errorCode);
-    }
-
-    #endregion
 }
-
