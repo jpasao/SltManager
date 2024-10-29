@@ -1,15 +1,14 @@
-import { api } from '../adapters/api'
+import { post, put, deleteItem } from '../adapters/api'
 
 const collectionResource = 'Collection'
 
-export const getCollections = (nameObj) =>
-  api.post(`${collectionResource}/Get`, nameObj).then((data) => data.json())
+export const getCollections = async (nameObj) => await post(`${collectionResource}/Get`, nameObj)
 
-export const createCollection = (collectionObj) =>
-  api.post(`${collectionResource}/Post`, collectionObj).then((data) => data.json())
+export const createCollection = async (collectionObj) =>
+  await post(`${collectionResource}/Post`, collectionObj)
 
-export const updateCollection = (collectionObj) =>
-  api.put(collectionResource, collectionObj).then((data) => data.json())
+export const updateCollection = async (collectionObj) =>
+  await put(collectionResource, collectionObj)
 
-export const deleteCollection = (collectionId) =>
-  api.delete(`${collectionResource}?id=${collectionId}`)
+export const deleteCollection = async (collectionId) =>
+  await deleteItem(`${collectionResource}?id=${collectionId}`)

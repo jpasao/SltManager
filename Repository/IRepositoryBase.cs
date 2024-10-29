@@ -6,48 +6,46 @@ internal interface IRepositoryBase
 {
     #region Patreon
 
-    Task<List<Patreon>> SearchPatreon(Patreon patreon);
+    Task<IResult> SearchPatreon(Patreon patreon);
 
-    Task<int> SavePatreon(Patreon patreon);
+    Task<IResult> SavePatreon(Patreon patreon);
 
-    Task<int> DeletePatreon(int id);
+    Task<IResult> DeletePatreon(int id);
 
     #endregion
 
     #region Collection
 
-    Task<List<Collection>> SearchCollection(Collection collection);
+    Task<IResult> SearchCollection(Collection collection);
 
-    Task<int> SaveCollection(Collection collection);
+    Task<IResult> SaveCollection(Collection collection);
     
-    Task<int> DeleteCollection(int id);
+    Task<IResult> DeleteCollection(int id);
 
     #endregion
 
     #region Models
-    Task<List<StlModel>> SearchModel(StlModel model);
+    Task<IResult> SearchModel(StlModel model);
     
-    Task<int> SaveModel(StlModel model);
+    Task<IResult> SaveModel(StlModel model);
 
-    Task<List<Photo>> GetPhotos(int idModel);
+    Task<IResult> GetPhotos(int idModel);
 
-    Task<int> SavePhoto(int idModel, IFormFile photo);
+    Task<IResult> SavePhoto(int idModel, IFormFile photo);
 
-    Task<int> DeletePhoto(int idPhoto);
+    Task<IResult> DeletePhoto(int idPhoto);
     
-    Task<int> DeleteModel(int id); 
-
-    Task<List<int>> GetModelYears();
+    Task<IResult> DeleteModel(int id); 
     
     #endregion
 
     #region Tags
 
-    Task<List<Tag>> SearchTag(Tag tag);
+    Task<IResult> SearchTag(Tag tag);
 
-    Task<int> SaveTag(Tag tag);
+    Task<IResult> SaveTag(Tag tag);
 
-    Task<int> DeleteTag(int id);
+    Task<IResult> DeleteTag(int id);
 
     #endregion
 }

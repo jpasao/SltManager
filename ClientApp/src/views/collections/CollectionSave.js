@@ -21,8 +21,8 @@ import Toast from '../../components/ToastComponent'
 const CollectionSave = () => {
   const location = useLocation()
   const navigateTo = useNavigate()
-  const { updateCollection } = useUpdateCollection()
-  const { createCollection } = useCreateCollection()
+  const { updateCollection, isLoading: isUpdatingItem } = useUpdateCollection()
+  const { createCollection, isLoading: isCreatingItem } = useCreateCollection()
   const { patreons, refreshPatreons } = useGetPatreons(defaultPatreon)
   const { createPatreon } = useCreatePatreon()
   const [validated, setValidated] = useState(false)
@@ -33,6 +33,8 @@ const CollectionSave = () => {
   const toaster = useRef()
   const resultToast = (message, color) =>
     addToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
+
+  const isLoading = isCreatingItem || isUpdatingItem
 
   let collectionToSave = defaultCollection
   const editingCollection = location.state !== null
@@ -92,17 +94,18 @@ const CollectionSave = () => {
     selectErrorMessage.current[field].display = displayValue
     selectClass.current[field] = classValue
   }
-  const handleCreatePatreon = (patreonName) => {
+  const handleCreatePatreon = async (patreonName) => {
     const newPatreon = { IdPatreon: 0, PatreonName: patreonName }
-    createPatreon(newPatreon).then(
+    await createPatreon(newPatreon).then(
       () => {
         refreshPatreons()
         resultToast(`El Patreon '${patreonName}' se ha guardado correctamente`, 'primary')
       },
-      () => resultToast(`Hubo un problema al guardar el Patreon '${patreonName}'`, 'danger'),
+      (error) =>
+        resultToast(`Hubo un problema al guardar el Patreon '${patreonName}': ${error}`, 'danger'),
     )
   }
-  const handleSave = (event) => {
+  const handleSave = async (event) => {
     const form = event.currentTarget
     event.preventDefault()
     let selectsAreValid = checkSelectsAreValid()
@@ -112,12 +115,23 @@ const CollectionSave = () => {
       return
     }
     if (editingCollection) {
-      updateCollection(collection).then(
+      await updateCollection(collection).then(
         () => navigateTo(routeNames.collections.search),
-        (reason) => console.error('the reason:', reason),
+        (error) =>
+          resultToast(
+            `Hubo un problema al guardar la colección '${collection.CollectionName}': ${error}`,
+            'danger',
+          ),
       )
     } else {
-      createCollection(collection).then(() => navigateTo(routeNames.collections.search))
+      await createCollection(collection).then(
+        () => navigateTo(routeNames.collections.search),
+        (error) =>
+          resultToast(
+            `Hubo un problema al guardar la colección '${collection.CollectionName}': ${error}`,
+            'danger',
+          ),
+      )
     }
     return false
   }
@@ -185,7 +199,12 @@ const CollectionSave = () => {
                   </div>
                 </CCol>
                 <CCol>
-                  <CButton color="primary" className="alignRight" type="submit">
+                  <CButton
+                    color="primary"
+                    className="alignRight"
+                    type="submit"
+                    disabled={isLoading}
+                  >
                     Guardar
                   </CButton>
                 </CCol>

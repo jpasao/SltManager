@@ -20,6 +20,7 @@ const invalidSelectMessage = 'invalid-select-message'
 
 const itemsPerTable = [5, 10, 20, 50, 100]
 const getPagedItems = (items, currentPage, itemsPerPage) => {
+  if (items === undefined || items.length === 0 || items instanceof Error) return
   const lastItemIndex = currentPage * itemsPerPage
   const firstItemIndex = lastItemIndex - itemsPerPage
   return items.slice(firstItemIndex, lastItemIndex)
@@ -27,14 +28,20 @@ const getPagedItems = (items, currentPage, itemsPerPage) => {
 const saveItemsPerPage = (number) => {
   localStorage.setItem('itemsPerPage', number)
 }
-const getItemsPerPage = () => {
+const getItemsPerPage = async () => {
   const items = localStorage.getItem('itemsPerPage')
   if (items === null) {
     const defaultItems = itemsPerTable[1].toString()
     saveItemsPerPage(defaultItems)
-    return defaultItems
+    return await defaultItems
   }
-  return items
+  return await items
+}
+const returnResponse = (response) => {
+  if (response instanceof Error || response?.StatusCode !== 200) {
+    return response?.message || 'An error occurred'
+  }
+  return response.Value
 }
 
 export {
@@ -46,4 +53,5 @@ export {
   getPagedItems,
   getItemsPerPage,
   saveItemsPerPage,
+  returnResponse,
 }

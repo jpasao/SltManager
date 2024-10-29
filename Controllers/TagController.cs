@@ -18,25 +18,25 @@ public class TagController : ControllerBase
     }
 
     [HttpPost("Get")]
-    public async Task<IEnumerable<Tag>> Get(Tag tag)
+    public async Task<IResult> Get(Tag tag)
     {
         return await repository.SearchTag(tag);
     }
 
     [HttpPost("Post")]
-    public async Task<int> Post(Tag tag)
+    public async Task<IResult> Post(Tag tag)
     {
         return await repository.SaveTag(tag);
     }
 
     [HttpPut]
-    public async Task<int> Put(Tag tag)
+    public async Task<IResult> Put(Tag tag)
     {
         return await repository.SaveTag(tag);
     }
 
     [HttpDelete]
-    public async Task<int> Delete(int id)
+    public async Task<IResult> Delete(int id)
     {
         return await repository.DeleteTag(id);
     }

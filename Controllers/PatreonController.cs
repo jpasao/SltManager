@@ -18,25 +18,25 @@ public class PatreonController : ControllerBase
     }
 
     [HttpPost("Get")]    
-    public async Task<IEnumerable<Patreon>> Get(Patreon patreon)
+    public async Task<IResult> Get(Patreon patreon)
     {
         return await repository.SearchPatreon(patreon);
     }
 
     [HttpPost("Post")]
-    public async Task<int> Post(Patreon patreon)
+    public async Task<IResult> Post(Patreon patreon)
     {
         return await repository.SavePatreon(patreon);
     }
 
     [HttpPut]
-    public async Task<int> Put(Patreon patreon)
+    public async Task<IResult> Put(Patreon patreon)
     {
         return await repository.SavePatreon(patreon);
     }
 
     [HttpDelete]
-    public async Task<int> Delete(int id)
+    public async Task<IResult> Delete(int id)
     {
         return await repository.DeletePatreon(id);
     }

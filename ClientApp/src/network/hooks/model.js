@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import * as modelService from '../services/model'
+import { returnResponse } from '../../defaults/global'
 
 export const useGetModels = (modelObject) => {
   const [isLoading, setIsLoading] = useState(false)
@@ -7,11 +8,14 @@ export const useGetModels = (modelObject) => {
   const [refresh, setRefresh] = useState(false)
 
   useEffect(() => {
-    setIsLoading(true)
-    modelService.getModels(modelObject).then((models) => {
-      setModels(models)
-      setIsLoading(false)
-    })
+    async function getData() {
+      setIsLoading(true)
+      await modelService.getModels(modelObject).then((response) => {
+        setIsLoading(false)
+        setModels(returnResponse(response))
+      })
+    }
+    getData()
   }, [refresh])
 
   const refreshModels = () => {
@@ -21,50 +25,81 @@ export const useGetModels = (modelObject) => {
   return { models, refreshModels, isLoading }
 }
 
-export const useGetModelYears = () => {
-  const modelYears = () => {
-    return modelService.getModelYears()
-  }
-  return { modelYears }
-}
-
 export const useCreateModel = () => {
-  const createModel = (modelObject) => {
-    return modelService.createModel(modelObject)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const createModel = async (modelObject) => {
+    setIsLoading(true)
+    return await modelService.createModel(modelObject).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
   }
-  return { createModel }
+  return { createModel, isLoading }
 }
 
 export const useUpdateModel = () => {
-  const updateModel = (modelObject) => {
-    return modelService.updateModel(modelObject)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const updateModel = async (modelObject) => {
+    setIsLoading(true)
+    return await modelService.updateModel(modelObject).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
   }
-  return { updateModel }
+  return { updateModel, isLoading }
 }
 
 export const useDeleteModel = () => {
-  const deleteModel = (modelId) => modelService.deleteModel(modelId)
+  const [isLoading, setIsLoading] = useState(false)
 
-  return { deleteModel }
+  const deleteModel = async (modelId) => {
+    setIsLoading(true)
+    return await modelService.deleteModel(modelId).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
+  }
+
+  return { deleteModel, isLoading }
 }
 
 export const useGetPhotos = () => {
-  const getPhotos = (modelId) => {
-    return modelService.getPhotos(modelId)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const getPhotos = async (modelId) => {
+    setIsLoading(true)
+    return await modelService.getPhotos(modelId).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
   }
-  return { getPhotos }
+  return { getPhotos, isLoading }
 }
 
 export const useCreatePhoto = () => {
-  const createPhoto = (photo, modelId) => {
-    return modelService.createPhoto(photo, modelId)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const createPhoto = async (photo, modelId) => {
+    setIsLoading(true)
+    return await modelService.createPhoto(photo, modelId).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
   }
-  return { createPhoto }
+  return { createPhoto, isLoading }
 }
 
 export const useDeletePhoto = () => {
-  const deletePhoto = (photoId) => {
-    return modelService.deletePhoto(photoId)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const deletePhoto = async (photoId) => {
+    setIsLoading(true)
+    return await modelService.deletePhoto(photoId).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
   }
-  return { deletePhoto }
+  return { deletePhoto, isLoading }
 }

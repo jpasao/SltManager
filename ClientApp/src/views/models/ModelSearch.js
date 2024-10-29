@@ -26,6 +26,7 @@ import {
   CBadge,
   CCallout,
   CToaster,
+  CSpinner,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import {
@@ -68,12 +69,12 @@ const ModelSearch = () => {
   const [search, setSearch] = useState(defaultModel)
   const [searchCollection, setSearchCollection] = useState(defaultCollection)
   const { models, refreshModels, isLoading: isFetchingItems } = useGetModels(search)
-  const { deleteModel } = useDeleteModel()
+  const { deleteModel, isLoading: isDeletingItem } = useDeleteModel()
   const { patreons, refreshPatreons } = useGetPatreons(defaultPatreon)
   const { createPatreon } = useCreatePatreon()
   const { collections, refreshCollections } = useGetCollections(searchCollection)
   const { createCollection } = useCreateCollection()
-  const { getPhotos } = useGetPhotos(0)
+  const { getPhotos, isLoading: isFetchingPhotos } = useGetPhotos(0)
   const { tags, refreshTags } = useGetTags(defaultTag)
   const { createTag } = useCreateTag()
   const [visible, setVisible] = useState(true)
@@ -94,10 +95,23 @@ const ModelSearch = () => {
   const resultToast = (message, color) =>
     setToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
 
+  const isLoading = isFetchingItems || isDeletingItem || isFetchingPhotos
   useEffect(() => {
-    const savedItemsPerPage = getItemsPerPage()
-    setPager(savedItemsPerPage)
+    const savedItemsPerPage = async () =>
+      await getItemsPerPage().then(() => {
+        setPager(savedItemsPerPage)
+        setSearch(defaultModel)
+      })
   }, [])
+
+  useEffect(() => {
+    if (models instanceof Error) {
+      resultToast(
+        `Hubo un problema al obtener los datos: ${models.info.message} ${models.info.data}`,
+        'danger',
+      )
+    }
+  }, [models])
 
   const setPager = (itemNumber) => {
     saveItemsPerPage(itemNumber)
@@ -177,8 +191,8 @@ const ModelSearch = () => {
   const toggleDeleteModal = (visible) => {
     setVisibleDeleteModal(visible)
   }
-  const deleteElement = () => {
-    deleteModel(deleteData.id).then(
+  const deleteElement = async () => {
+    await deleteModel(deleteData.id).then(
       () => {
         if ((models.length - 1) % itemsPerPage === 0) {
           setCurrentPage(1)
@@ -186,14 +200,19 @@ const ModelSearch = () => {
         refreshModels()
         resultToast(`El modelo '${deleteData.name}' se ha borrado correctamente`, 'primary')
       },
-      () => resultToast(`Hubo un problema al borrar el modelo '${deleteData.name}'`, 'danger'),
+      (error) =>
+        resultToast(
+          `Hubo un problema al borrar el modelo '${deleteData.name}': ${error}`,
+          'danger',
+        ),
     )
     toggleDeleteModal(false)
   }
-  const handleView = (model) => {
+  const handleView = async (model) => {
     setModel(model)
-    getPhotos(model.IdModel).then((photos) => {
-      setImages(photos)
+    await getPhotos(model.IdModel).then((photos) => {
+      const photoArray = Array.isArray(photos) ? photos : []
+      setImages(photoArray)
       toggleDetailModal(true)
     })
   }
@@ -209,39 +228,45 @@ const ModelSearch = () => {
   const handleOpenFolder = (path) => {
     connection.invoke('SendPath', path)
   }
-  const handleCreatePatreon = (patreonName) => {
+  const handleCreatePatreon = async (patreonName) => {
     const newPatreon = { IdPatreon: 0, PatreonName: patreonName }
-    createPatreon(newPatreon).then(
+    await createPatreon(newPatreon).then(
       () => {
         refreshPatreons()
         resultToast(`El Patreon '${patreonName}' se ha guardado correctamente`, 'primary')
       },
-      () => resultToast(`Hubo un problema al guardar el Patreon '${patreonName}'`, 'danger'),
+      (error) =>
+        resultToast(`Hubo un problema al guardar el Patreon '${patreonName}': ${error}`, 'danger'),
     )
   }
-  const handleCreateCollection = (collectionName) => {
+  const handleCreateCollection = async (collectionName) => {
     if (patreon === 0) return
     const newCollection = {
       IdCollection: 0,
       Patreon: { IdPatreon: patreon },
       CollectionName: collectionName,
     }
-    createCollection(newCollection).then(
+    await createCollection(newCollection).then(
       () => {
         refreshCollections()
         resultToast(`La colección '${collectionName}' se ha guardado correctamente`, 'primary')
       },
-      () => resultToast(`Hubo un problema al guardar la colección '${collectionName}'`, 'danger'),
+      (error) =>
+        resultToast(
+          `Hubo un problema al guardar la colección '${collectionName}': ${error}`,
+          'danger',
+        ),
     )
   }
-  const handleCreateTag = (tagName) => {
+  const handleCreateTag = async (tagName) => {
     const newTag = { IdTag: 0, TagName: tagName }
-    createTag(newTag).then(
+    await createTag(newTag).then(
       () => {
         refreshTags()
         resultToast(`La etiqueta '${tagName}' se ha guardado correctamente`, 'primary')
       },
-      () => resultToast(`Hubo un problema al guardar la etiqueta '${tagName}'`, 'danger'),
+      (error) =>
+        resultToast(`Hubo un problema al guardar la etiqueta '${tagName}': ${error}`, 'danger'),
     )
   }
 
@@ -269,7 +294,7 @@ const ModelSearch = () => {
     ...actionColumns,
   ]
 
-  const items = pagedItems.map((model) => {
+  const items = pagedItems?.map((model) => {
     return {
       id: model.IdModel,
       name: model.ModelName,
@@ -293,7 +318,7 @@ const ModelSearch = () => {
     }
   })
 
-  const pager = models.length > itemsPerPage && (
+  const pager = models && models.length > itemsPerPage && (
     <Pager
       itemsPerPage={itemsPerPage}
       totalItems={models.length}
@@ -349,7 +374,12 @@ const ModelSearch = () => {
     })
   }
 
-  return (
+  const spinner = (
+    <div className="pt-3 text-center">
+      <CSpinner color="primary" variant="grow" />
+    </div>
+  )
+  const view = (
     <CRow>
       <CCol xs={12}>
         <CCard className="mb-4">
@@ -452,7 +482,7 @@ const ModelSearch = () => {
                       color="primary"
                       className="alignRight"
                       type="submit"
-                      disabled={isFetchingItems}
+                      disabled={isLoading}
                     >
                       Buscar
                     </CButton>
@@ -484,7 +514,7 @@ const ModelSearch = () => {
             </label>
           </CCardHeader>
           <CCardBody>
-            {items.length === 0 && !isFetchingItems ? (
+            {items?.length === 0 && !isLoading ? (
               <CCallout color="light">No aparece nada con esa búsqueda.</CCallout>
             ) : (
               <>
@@ -508,12 +538,12 @@ const ModelSearch = () => {
         <CModalBody>
           <CCard className="w-100">
             <CCarousel
-              controls={images.length > 1}
-              indicators={images.length > 1}
+              controls={images?.length > 1}
+              indicators={images?.length > 1}
               interval={false}
               dark
             >
-              {images.length === 0 ? (
+              {images === undefined || images.length === 0 ? (
                 <CCarouselItem key={0} className="fittedImageHeight">
                   <CImage
                     className="d-block"
@@ -560,6 +590,8 @@ const ModelSearch = () => {
       <CToaster className="p-3" placement="top-end" push={toast} ref={toaster} />
     </CRow>
   )
+
+  return <>{isLoading ? spinner : view}</>
 }
 
 export default ModelSearch

@@ -1,25 +1,19 @@
-import { api } from '../adapters/api'
+import { get, post, postImage, put, deleteItem } from '../adapters/api'
 
 const modelResource = 'StlModel'
 
-export const getModels = (modelObj) =>
-  api.post(`${modelResource}/Get`, modelObj).then((data) => data.json())
+export const getModels = async (modelObj) => await post(`${modelResource}/Get`, modelObj)
 
-export const getModelYears = () =>
-  api.get(`${modelResource}/ModelYears`).then((data) => data.json())
+export const createModel = async (modelObj) => await post(`${modelResource}/Post`, modelObj)
 
-export const createModel = (modelObj) =>
-  api.post(`${modelResource}/Post`, modelObj).then((data) => data.json())
+export const updateModel = async (modelObj) => await put(modelResource, modelObj)
 
-export const updateModel = (modelObj) =>
-  api.put(modelResource, modelObj).then((data) => data.json())
+export const deleteModel = async (modelId) => await deleteItem(`${modelResource}?id=${modelId}`)
 
-export const deleteModel = (modelId) => api.delete(`${modelResource}?id=${modelId}`)
+export const getPhotos = async (modelId) => await get(`${modelResource}/Photo?id=${modelId}`)
 
-export const getPhotos = (modelId) =>
-  api.get(`${modelResource}/Photo?id=${modelId}`).then((data) => data.json())
+export const createPhoto = async (photo, modelId) =>
+  await postImage(`${modelResource}/Photo?id=${modelId}`, photo)
 
-export const createPhoto = (photo, modelId) =>
-  api.postImage(`${modelResource}/Photo?id=${modelId}`, photo).then((data) => data.json())
-
-export const deletePhoto = (photoId) => api.delete(`${modelResource}/Photo?id=${photoId}`)
+export const deletePhoto = async (photoId) =>
+  await deleteItem(`${modelResource}/Photo?id=${photoId}`)

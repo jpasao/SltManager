@@ -3,9 +3,10 @@ import { CToast, CToastBody, CToastClose } from '@coreui/react'
 
 const Toast = (props) => {
   const { message, color, push, refProp } = props
+  const hide = color !== 'danger'
   return (
     <CToast
-      autohide={true}
+      autohide={hide}
       visible={true}
       color={color}
       push={push}

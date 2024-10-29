@@ -14,6 +14,7 @@ import {
   CForm,
   CCallout,
   CToaster,
+  CSpinner,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilCaretTop, cilCaretBottom, cilPencil, cilTrash } from '@coreui/icons'
@@ -40,7 +41,7 @@ const CollectionSearch = () => {
   const navigateTo = useNavigate()
   const [search, setSearch] = useState(defaultCollection)
   const { collections, refreshCollections, isLoading: isFetchingItems } = useGetCollections(search)
-  const { deleteCollection } = useDeleteCollection()
+  const { deleteCollection, isLoading: isDeletingItem } = useDeleteCollection()
   const { patreons, refreshPatreons } = useGetPatreons(defaultPatreon)
   const { createPatreon } = useCreatePatreon()
   const [visible, setVisible] = useState(true)
@@ -55,10 +56,23 @@ const CollectionSearch = () => {
   const resultToast = (message, color) =>
     addToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
 
+  const isLoading = isFetchingItems || isDeletingItem
   useEffect(() => {
-    const savedItemsPerPage = getItemsPerPage()
-    setPager(savedItemsPerPage)
+    const savedItemsPerPage = async () =>
+      await getItemsPerPage().then(() => {
+        setPager(savedItemsPerPage)
+        setSearch(defaultCollection)
+      })
   }, [])
+
+  useEffect(() => {
+    if (collections instanceof Error) {
+      resultToast(
+        `Hubo un problema al obtener los datos: ${collections.info.message} ${collections.info.data}`,
+        'danger',
+      )
+    }
+  }, [collections])
 
   const setPager = (itemNumber) => {
     saveItemsPerPage(itemNumber)
@@ -111,8 +125,8 @@ const CollectionSearch = () => {
   const toggleDeleteModal = (visible) => {
     setVisibleDeleteModal(visible)
   }
-  const deleteElement = () => {
-    deleteCollection(deleteObj.id).then(
+  const deleteElement = async () => {
+    await deleteCollection(deleteObj.id).then(
       () => {
         if ((collections.length - 1) % itemsPerPage === 0) {
           setCurrentPage(1)
@@ -120,18 +134,23 @@ const CollectionSearch = () => {
         refreshCollections()
         resultToast(`La colección '${deleteObj.name}' se ha borrado correctamente`, 'primary')
       },
-      () => resultToast(`Hubo un problema al borrar la colección '${deleteObj.name}'`, 'danger'),
+      (error) =>
+        resultToast(
+          `Hubo un problema al borrar la colección '${deleteObj.name}': ${error}`,
+          'danger',
+        ),
     )
     toggleDeleteModal(false)
   }
-  const handleCreatePatreon = (patreonName) => {
+  const handleCreatePatreon = async (patreonName) => {
     const newPatreon = { IdPatreon: 0, PatreonName: patreonName }
-    createPatreon(newPatreon).then(
+    await createPatreon(newPatreon).then(
       () => {
         refreshPatreons()
         resultToast(`El Patreon '${patreonName}' se ha guardado correctamente`, 'primary')
       },
-      () => resultToast(`Hubo un problema al guardar el Patreon '${patreonName}'`, 'danger'),
+      (error) =>
+        resultToast(`Hubo un problema al guardar el Patreon '${patreonName}: ${error}'`, 'danger'),
     )
   }
 
@@ -149,7 +168,7 @@ const CollectionSearch = () => {
     ...actionColumns,
   ]
 
-  const items = pagedItems.map((collection) => {
+  const items = pagedItems?.map((collection) => {
     return {
       id: collection.IdCollection,
       name: collection.CollectionName,
@@ -172,7 +191,7 @@ const CollectionSearch = () => {
     }
   })
 
-  const pager = collections.length > itemsPerPage && (
+  const pager = collections && collections.length > itemsPerPage && (
     <Pager
       itemsPerPage={itemsPerPage}
       totalItems={collections.length}
@@ -180,8 +199,12 @@ const CollectionSearch = () => {
       currentPage={currentPage}
     />
   )
-
-  return (
+  const spinner = (
+    <div className="pt-3 text-center">
+      <CSpinner color="primary" variant="grow" />
+    </div>
+  )
+  const view = (
     <CRow>
       <CCol xs={12}>
         <CCard className="mb-4">
@@ -243,7 +266,7 @@ const CollectionSearch = () => {
                       color="primary"
                       className="alignRight"
                       onClick={handleSearch}
-                      disabled={isFetchingItems}
+                      disabled={isLoading}
                     >
                       Buscar
                     </CButton>
@@ -268,7 +291,7 @@ const CollectionSearch = () => {
             </label>
           </CCardHeader>
           <CCardBody>
-            {items.length === 0 && !isFetchingItems ? (
+            {items?.length === 0 && !isLoading ? (
               <CCallout color="light">No aparece nada con esa búsqueda.</CCallout>
             ) : (
               <>
@@ -288,6 +311,8 @@ const CollectionSearch = () => {
       <CToaster className="p-3" placement="top-end" push={toast} ref={toaster} />
     </CRow>
   )
+
+  return <>{isLoading ? spinner : view}</>
 }
 
 export default CollectionSearch

@@ -13,6 +13,7 @@ import {
   CForm,
   CCallout,
   CToaster,
+  CSpinner,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilCaretTop, cilCaretBottom, cilPencil, cilTrash } from '@coreui/icons'
@@ -36,7 +37,7 @@ const TagSearch = () => {
 
   const navigateTo = useNavigate()
   const { tags, refreshTags, isLoading: isFetchingItems } = useGetTags(tagObject)
-  const { deleteTag } = useDeleteTag()
+  const { deleteTag, isLoading: isDeletingItem } = useDeleteTag()
   const [visible, setVisible] = useState(true)
   const [visibleDeleteModal, setVisibleDeleteModal] = useState(false)
   const [name, setName] = useState('')
@@ -48,10 +49,22 @@ const TagSearch = () => {
   const resultToast = (message, color) =>
     addToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
 
+  const isLoading = isFetchingItems || isDeletingItem
   useEffect(() => {
-    const savedItemsPerPage = getItemsPerPage()
-    setPager(savedItemsPerPage)
+    const savedItemsPerPage = async () =>
+      await getItemsPerPage().then(() => {
+        setPager(savedItemsPerPage)
+      })
   }, [])
+
+  useEffect(() => {
+    if (tags instanceof Error) {
+      resultToast(
+        `Hubo un problema al obtener los datos: ${tags.info.message} ${tags.info.data}`,
+        'danger',
+      )
+    }
+  }, [tags])
 
   const setPager = (itemNumber) => {
     saveItemsPerPage(itemNumber)
@@ -83,8 +96,8 @@ const TagSearch = () => {
   const toggleDeleteModal = (visible) => {
     setVisibleDeleteModal(visible)
   }
-  const deleteElement = () => {
-    deleteTag(deleteObj.id).then(
+  const deleteElement = async () => {
+    await deleteTag(deleteObj.id).then(
       () => {
         if ((tags.length - 1) % itemsPerPage === 0) {
           setCurrentPage(1)
@@ -92,7 +105,11 @@ const TagSearch = () => {
         refreshTags()
         resultToast(`La etiqueta '${deleteObj.name}' se ha borrado correctamente`, 'primary')
       },
-      () => resultToast(`Hubo un problema al borrar la etiqueta '${deleteObj.name}'`, 'danger'),
+      (error) =>
+        resultToast(
+          `Hubo un problema al borrar la etiqueta '${deleteObj.name}': ${error}`,
+          'danger',
+        ),
     )
     toggleDeleteModal(false)
   }
@@ -106,7 +123,7 @@ const TagSearch = () => {
     ...actionColumns,
   ]
 
-  const items = pagedItems.map((tag) => {
+  const items = pagedItems?.map((tag) => {
     return {
       id: tag.IdTag,
       name: tag.TagName,
@@ -123,7 +140,7 @@ const TagSearch = () => {
     }
   })
 
-  const pager = tags.length > itemsPerPage && (
+  const pager = tags && tags.length > itemsPerPage && (
     <Pager
       itemsPerPage={itemsPerPage}
       totalItems={tags.length}
@@ -131,8 +148,12 @@ const TagSearch = () => {
       currentPage={currentPage}
     />
   )
-
-  return (
+  const spinner = (
+    <div className="pt-3 text-center">
+      <CSpinner color="primary" variant="grow" />
+    </div>
+  )
+  const view = (
     <CRow>
       <CCol xs={12}>
         <CCard className="mb-4">
@@ -175,7 +196,7 @@ const TagSearch = () => {
                       color="primary"
                       className="alignRight"
                       onClick={handleSearch}
-                      disabled={isFetchingItems}
+                      disabled={isLoading}
                     >
                       Buscar
                     </CButton>
@@ -200,7 +221,7 @@ const TagSearch = () => {
             </label>
           </CCardHeader>
           <CCardBody>
-            {items.length === 0 && !isFetchingItems ? (
+            {items?.length === 0 && !isLoading ? (
               <CCallout color="light">No aparece nada con esa búsqueda.</CCallout>
             ) : (
               <>
@@ -220,6 +241,8 @@ const TagSearch = () => {
       <CToaster className="p-3" placement="top-end" push={toast} ref={toaster} />
     </CRow>
   )
+
+  return <>{isLoading ? spinner : view}</>
 }
 
 export default TagSearch

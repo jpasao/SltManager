@@ -1,14 +1,12 @@
-import { api } from '../adapters/api'
+import { post, put, deleteItem } from '../adapters/api'
 
 const patreonResource = 'Patreon'
 
-export const getPatreons = (nameObj) =>
-  api.post(`${patreonResource}/Get`, nameObj).then((data) => data.json())
+export const getPatreons = async (nameObj) => await post(`${patreonResource}/Get`, nameObj)
 
-export const createPatreon = (patreonObj) =>
-  api.post(`${patreonResource}/Post`, patreonObj).then((data) => data.json())
+export const createPatreon = async (patreonObj) => await post(`${patreonResource}/Post`, patreonObj)
 
-export const updatePatreon = (patreonObj) =>
-  api.put(patreonResource, patreonObj).then((data) => data.json())
+export const updatePatreon = async (patreonObj) => await put(patreonResource, patreonObj)
 
-export const deletePatreon = (patreonId) => api.delete(`${patreonResource}?id=${patreonId}`)
+export const deletePatreon = async (patreonId) =>
+  await deleteItem(`${patreonResource}?id=${patreonId}`)

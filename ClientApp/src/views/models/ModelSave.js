@@ -40,11 +40,11 @@ import SignalRConnector from '../../network/adapters/signalr'
 const ModelSave = () => {
   const location = useLocation()
   const animatedComponents = makeAnimated()
-  const { updateModel } = useUpdateModel()
-  const { createModel } = useCreateModel()
-  const { getPhotos } = useGetPhotos()
-  const { deletePhoto } = useDeletePhoto()
-  const { createPhoto } = useCreatePhoto()
+  const { updateModel, isLoading: isUpdatingItem } = useUpdateModel()
+  const { createModel, isLoading: isCreatingItem } = useCreateModel()
+  const { getPhotos, isLoading: isFetchingPhotos } = useGetPhotos()
+  const { deletePhoto, isLoading: isDeletingPhoto } = useDeletePhoto()
+  const { createPhoto, isLoading: isCreatingPhoto } = useCreatePhoto()
   const { patreons, refreshPatreons } = useGetPatreons(defaultPatreon)
   const { createPatreon } = useCreatePatreon()
   const [searchCollection, setSearchCollection] = useState(defaultCollection)
@@ -65,6 +65,9 @@ const ModelSave = () => {
 
   const resultToast = (message, color) =>
     addToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
+
+  const isLoading =
+    isCreatingItem || isUpdatingItem || isFetchingPhotos || isDeletingPhoto || isCreatingPhoto
 
   let modelToSave = defaultModel
   const requiredSelectFields = ['Patreon', 'Tag']
@@ -96,7 +99,8 @@ const ModelSave = () => {
 
       getPhotos(modelToSave.IdModel).then((photos) => {
         const { Image, ...rest } = modelToSave
-        const modelWithImages = { Image: photos, ...rest }
+        const photoArray = Array.isArray(photos) ? photos : []
+        const modelWithImages = { Image: photoArray, ...rest }
 
         setModel(modelWithImages)
       })
@@ -211,9 +215,9 @@ const ModelSave = () => {
   const handleDefaultFolder = () => {
     connection.invoke('SendPath', stlRootPath)
   }
-  const handleImage = (event) => {
+  const handleImage = async (event) => {
     if (event.target.files) {
-      let selectedImages = model.Image
+      let selectedImages = model.Image || []
       for (let photo of event.target.files) {
         convertToBase64(photo).then((base64) => {
           selectedImages.push({ IdPhoto: 0, IdImage: 0, Image: base64 })
@@ -224,7 +228,7 @@ const ModelSave = () => {
 
         const formData = new FormData()
         formData.append('photo', photo, photo.name)
-        createPhoto(formData, model.IdModel).then(
+        await createPhoto(formData, model.IdModel).then(
           (newIdPhoto) => {
             const { Image, ...rest } = model
             for (const element of Image) {
@@ -237,7 +241,7 @@ const ModelSave = () => {
             setModel(modifiedModel)
             resultToast('La imagen se ha guardado correctamente', 'primary')
           },
-          () => resultToast('Hubo un problema al guardar la imagen', 'danger'),
+          (error) => resultToast(`Hubo un problema al guardar la imagen: ${error}`, 'danger'),
         )
       }
     }
@@ -293,7 +297,7 @@ const ModelSave = () => {
     selectErrorMessage.current[field].display = displayValue
     selectClass.current[field] = classValue
   }
-  const handleSave = (event) => {
+  const handleSave = async (event) => {
     const form = event.currentTarget
     event.preventDefault()
     let selectsAreValid = checkSelectsAreValid()
@@ -303,24 +307,24 @@ const ModelSave = () => {
       return
     }
     if (editingModel.current) {
-      updateModel(model).then(
+      await updateModel(model).then(
         () => resultToast('El modelo se ha guardado correctamente', 'primary'),
-        () => resultToast('Hubo un problema al guardar el modelo', 'danger'),
+        (error) => resultToast(`Hubo un problema al guardar el modelo: ${error}`, 'danger'),
       )
     } else {
-      createModel(model).then(
+      await createModel(model).then(
         () => {
           editingModel.current = true
           method.current = 'put'
           setValidated(false)
           resultToast('El modelo se ha creado correctamente', 'primary')
         },
-        () => resultToast('Hubo un problema al crear el modelo', 'danger'),
+        (error) => resultToast(`Hubo un problema al crear el modelo: ${error}`, 'danger'),
       )
     }
   }
-  const handleDeletePhoto = (photoId) => {
-    deletePhoto(photoId).then(
+  const handleDeletePhoto = async (photoId) => {
+    await deletePhoto(photoId).then(
       () => {
         const { Image, ...rest } = model
         const filteredImages = Image.filter((image) => image.IdPhoto !== photoId)
@@ -328,42 +332,48 @@ const ModelSave = () => {
         setModel(modifiedModel)
         resultToast('La imagen se ha borrado correctamente', 'primary')
       },
-      () => resultToast('Hubo un problema al borrar la imagen', 'danger'),
+      (error) => resultToast(`Hubo un problema al borrar la imagen: ${error}`, 'danger'),
     )
   }
-  const handleCreatePatreon = (patreonName) => {
+  const handleCreatePatreon = async (patreonName) => {
     const newPatreon = { IdPatreon: 0, PatreonName: patreonName }
-    createPatreon(newPatreon).then(
+    await createPatreon(newPatreon).then(
       () => {
         refreshPatreons()
         resultToast(`El Patreon '${patreonName}' se ha guardado correctamente`, 'primary')
       },
-      () => resultToast(`Hubo un problema al guardar el Patreon '${patreonName}'`, 'danger'),
+      (error) =>
+        resultToast(`Hubo un problema al guardar el Patreon '${patreonName}': ${error}`, 'danger'),
     )
   }
-  const handleCreateCollection = (collectionName) => {
+  const handleCreateCollection = async (collectionName) => {
     if (patreon === 0) return
     const newCollection = {
       IdCollection: 0,
       Patreon: { IdPatreon: model.Patreon.IdPatreon },
       CollectionName: collectionName,
     }
-    createCollection(newCollection).then(
+    await createCollection(newCollection).then(
       () => {
         refreshCollections()
         resultToast(`La colección '${collectionName}' se ha guardado correctamente`, 'primary')
       },
-      () => resultToast(`Hubo un problema al guardar la colección '${collectionName}'`, 'danger'),
+      (error) =>
+        resultToast(
+          `Hubo un problema al guardar la colección '${collectionName}': ${error}`,
+          'danger',
+        ),
     )
   }
-  const handleCreateTag = (tagName) => {
+  const handleCreateTag = async (tagName) => {
     const newTag = { IdTag: 0, TagName: tagName }
-    createTag(newTag).then(
+    await createTag(newTag).then(
       () => {
         refreshTags()
         resultToast(`La etiqueta '${tagName}' se ha guardado correctamente`, 'primary')
       },
-      () => resultToast(`Hubo un problema al guardar la etiqueta '${tagName}'`, 'danger'),
+      (error) =>
+        resultToast(`Hubo un problema al guardar la etiqueta '${tagName}': ${error}`, 'danger'),
     )
   }
 
@@ -566,7 +576,12 @@ const ModelSave = () => {
               </CRow>
               <CRow xs={{ gutter: 2 }}>
                 <CCol>
-                  <CButton color="primary" className="alignRight" type="submit">
+                  <CButton
+                    color="primary"
+                    className="alignRight"
+                    type="submit"
+                    disabled={isLoading}
+                  >
                     Guardar
                   </CButton>
                 </CCol>

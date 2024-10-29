@@ -13,6 +13,7 @@ import {
   CForm,
   CCallout,
   CToaster,
+  CSpinner,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilCaretTop, cilCaretBottom, cilPencil, cilTrash } from '@coreui/icons'
@@ -36,7 +37,7 @@ const PatreonSearch = () => {
 
   const navigateTo = useNavigate()
   const { patreons, refreshPatreons, isLoading: isFetchingItems } = useGetPatreons(patreonObject)
-  const { deletePatreon } = useDeletePatreon()
+  const { deletePatreon, isLoading: isDeletingItem } = useDeletePatreon()
   const [visible, setVisible] = useState(true)
   const [visibleDeleteModal, setVisibleDeleteModal] = useState(false)
   const [name, setName] = useState('')
@@ -48,10 +49,22 @@ const PatreonSearch = () => {
   const resultToast = (message, color) =>
     addToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
 
+  const isLoading = isFetchingItems || isDeletingItem
   useEffect(() => {
-    const savedItemsPerPage = getItemsPerPage()
-    setPager(savedItemsPerPage)
+    const savedItemsPerPage = async () =>
+      await getItemsPerPage().then(() => {
+        setPager(savedItemsPerPage)
+      })
   }, [])
+
+  useEffect(() => {
+    if (patreons instanceof Error) {
+      resultToast(
+        `Hubo un problema al obtener los datos: ${patreons.info.message} ${patreons.info.data}`,
+        'danger',
+      )
+    }
+  }, [patreons])
 
   const setPager = (itemNumber) => {
     saveItemsPerPage(itemNumber)
@@ -82,8 +95,8 @@ const PatreonSearch = () => {
   const toggleDeleteModal = (visible) => {
     setVisibleDeleteModal(visible)
   }
-  const deleteElement = () => {
-    deletePatreon(deleteObj.id).then(
+  const deleteElement = async () => {
+    await deletePatreon(deleteObj.id).then(
       () => {
         if ((patreons.length - 1) % itemsPerPage === 0) {
           setCurrentPage(1)
@@ -91,7 +104,11 @@ const PatreonSearch = () => {
         refreshPatreons()
         resultToast(`El Patreon '${deleteObj.name}' se ha borrado correctamente`, 'primary')
       },
-      () => resultToast(`Hubo un problema al borrar el Patreon '${deleteObj.name}'`, 'danger'),
+      (error) =>
+        resultToast(
+          `Hubo un problema al borrar el Patreon '${deleteObj.name}': ${error}`,
+          'danger',
+        ),
     )
     toggleDeleteModal(false)
   }
@@ -105,7 +122,7 @@ const PatreonSearch = () => {
     ...actionColumns,
   ]
 
-  const items = pagedItems.map((patreon) => {
+  const items = pagedItems?.map((patreon) => {
     return {
       id: patreon.IdPatreon,
       name: patreon.PatreonName,
@@ -122,7 +139,7 @@ const PatreonSearch = () => {
     }
   })
 
-  const pager = patreons.length > itemsPerPage && (
+  const pager = patreons && patreons.length > itemsPerPage && (
     <Pager
       itemsPerPage={itemsPerPage}
       totalItems={patreons.length}
@@ -130,8 +147,12 @@ const PatreonSearch = () => {
       currentPage={currentPage}
     />
   )
-
-  return (
+  const spinner = (
+    <div className="pt-3 text-center">
+      <CSpinner color="primary" variant="grow" />
+    </div>
+  )
+  const view = (
     <CRow>
       <CCol xs={12}>
         <CCard className="mb-4">
@@ -174,7 +195,7 @@ const PatreonSearch = () => {
                       color="primary"
                       className="alignRight"
                       onClick={handleSearch}
-                      disabled={isFetchingItems}
+                      disabled={isLoading}
                     >
                       Buscar
                     </CButton>
@@ -199,7 +220,7 @@ const PatreonSearch = () => {
             </label>
           </CCardHeader>
           <CCardBody>
-            {items.length === 0 && !isFetchingItems ? (
+            {items?.length === 0 && !isLoading ? (
               <CCallout color="light">No aparece nada con esa búsqueda.</CCallout>
             ) : (
               <>
@@ -219,6 +240,8 @@ const PatreonSearch = () => {
       <CToaster className="p-3" placement="top-end" push={toast} ref={toaster} />
     </CRow>
   )
+
+  return <>{isLoading ? spinner : view}</>
 }
 
 export default PatreonSearch

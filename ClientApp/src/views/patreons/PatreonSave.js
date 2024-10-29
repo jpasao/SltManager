@@ -24,12 +24,14 @@ const PatreonSave = () => {
   const navigateTo = useNavigate()
   const editingPatreon = location.state !== null
   const method = editingPatreon ? 'put' : 'post'
-  const { updatePatreon } = useUpdatePatreon()
-  const { createPatreon } = useCreatePatreon()
+  const { updatePatreon, isLoading: isUpdatingItem } = useUpdatePatreon()
+  const { createPatreon, isLoading: isCreatingItem } = useCreatePatreon()
   const { collections, refreshCollections } = useGetCollections(patreonCollection)
   const [validated, setValidated] = useState(false)
   const [patreon, setPatreon] = useState(defaultPatreon)
   let patreonToSave = defaultPatreon
+
+  const isLoading = isCreatingItem || isUpdatingItem
 
   useEffect(() => {
     if (editingPatreon) {
@@ -51,19 +53,22 @@ const PatreonSave = () => {
   if (!editingPatreon && patreon.IdPatreon !== 0) {
     setPatreon(defaultPatreon)
   }
-  const handleSave = (event) => {
+  const handleSave = async (event) => {
     const form = event.currentTarget
     event.preventDefault()
     if (form.checkValidity() === false) {
       event.stopPropagation()
     } else {
       if (editingPatreon) {
-        updatePatreon(patreon).then(
+        await updatePatreon(patreon).then(
           () => navigateTo(routeNames.patreons.search),
           (reason) => console.error('the reason:', reason),
         )
       } else {
-        createPatreon(patreon).then(() => navigateTo(routeNames.patreons.search))
+        await createPatreon(patreon).then(
+          () => navigateTo(routeNames.patreons.search),
+          (error) => resultToast(`Hubo un problema al guardar el Patreon: ${error}`, 'danger'),
+        )
       }
     }
     setValidated(true)
@@ -121,7 +126,12 @@ const PatreonSave = () => {
                   />
                 </CCol>
                 <CCol xs={3}>
-                  <CButton color="primary" className="alignRight" type="submit">
+                  <CButton
+                    color="primary"
+                    className="alignRight"
+                    type="submit"
+                    disabled={isLoading}
+                  >
                     Guardar
                   </CButton>
                 </CCol>

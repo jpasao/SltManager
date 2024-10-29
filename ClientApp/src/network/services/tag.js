@@ -1,13 +1,11 @@
-import { api } from '../adapters/api'
+import { post, put, deleteItem } from '../adapters/api'
 
 const tagResource = 'Tag'
 
-export const getTags = (nameObj) =>
-  api.post(`${tagResource}/Get`, nameObj).then((data) => data.json())
+export const getTags = async (nameObj) => await post(`${tagResource}/Get`, nameObj)
 
-export const createTag = (tagObj) =>
-  api.post(`${tagResource}/Post`, tagObj).then((data) => data.json())
+export const createTag = async (tagObj) => await post(`${tagResource}/Post`, tagObj)
 
-export const updateTag = (tagObj) => api.put(tagResource, tagObj).then((data) => data.json())
+export const updateTag = async (tagObj) => await put(tagResource, tagObj)
 
-export const deleteTag = (tagId) => api.delete(`${tagResource}?id=${tagId}`)
+export const deleteTag = async (tagId) => await deleteItem(`${tagResource}?id=${tagId}`)

@@ -19,10 +19,12 @@ const TagSave = () => {
   const navigateTo = useNavigate()
   const editingTag = location.state !== null
   const method = editingTag ? 'put' : 'post'
-  const { updateTag } = useUpdateTag()
-  const { createTag } = useCreateTag()
+  const { updateTag, isLoading: isUpdatingItem } = useUpdateTag()
+  const { createTag, isLoading: isCreatingItem } = useCreateTag()
   const [validated, setValidated] = useState(false)
   const [tag, setTag] = useState(defaultTag)
+
+  const isLoading = isCreatingItem || isUpdatingItem
   let tagToSave = defaultTag
 
   useEffect(() => {
@@ -43,19 +45,30 @@ const TagSave = () => {
     setTag(defaultTag)
   }
 
-  const handleSave = (event) => {
+  const handleSave = async (event) => {
     const form = event.currentTarget
     event.preventDefault()
     if (form.checkValidity() === false) {
       event.stopPropagation()
     } else {
       if (editingTag) {
-        updateTag(tag).then(
+        await updateTag(tag).then(
           () => navigateTo(routeNames.tags.search),
-          (reason) => console.error('the reason:', reason),
+          (error) =>
+            resultToast(
+              `Hubo un problema al guardar la etiqueta '${tag.TagName}: ${error}'`,
+              'danger',
+            ),
         )
       } else {
-        createTag(tag).then(() => navigateTo(routeNames.tags.search))
+        await createTag(tag).then(
+          () => navigateTo(routeNames.tags.search),
+          (error) =>
+            resultToast(
+              `Hubo un problema al guardar la etiqueta '${tag.TagName}: ${error}'`,
+              'danger',
+            ),
+        )
       }
     }
     setValidated(true)
@@ -94,7 +107,7 @@ const TagSave = () => {
                 placeholder="Nombre de la Etiqueta"
                 required
               />
-              <CButton color="primary" className="alignRight" type="submit">
+              <CButton color="primary" className="alignRight" type="submit" disabled={isLoading}>
                 Guardar
               </CButton>
             </CForm>

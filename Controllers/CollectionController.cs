@@ -18,25 +18,25 @@ public class CollectionController : ControllerBase
     }
 
     [HttpPost("Get")]    
-    public async Task<IEnumerable<Collection>> Get(Collection collection)
+    public async Task<IResult> Get(Collection collection)
     {
         return await repository.SearchCollection(collection);
     }
 
     [HttpPost("Post")]
-    public async Task<int> Post(Collection collection)
+    public async Task<IResult> Post(Collection collection)
     {
         return await repository.SaveCollection(collection);
     }
 
     [HttpPut]
-    public async Task<int> Put(Collection collection)
+    public async Task<IResult> Put(Collection collection)
     {
         return await repository.SaveCollection(collection);
     }
 
     [HttpDelete]
-    public async Task<int> Delete(int id)
+    public async Task<IResult> Delete(int id)
     {
         return await repository.DeleteCollection(id);
     }

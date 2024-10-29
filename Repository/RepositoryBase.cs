@@ -19,7 +19,7 @@ public class RepositoryBase : IRepositoryBase
 
     #region Patreon
 
-    public async Task<List<Patreon>> SearchPatreon(Patreon patreon)
+    public async Task<IResult> SearchPatreon(Patreon patreon)
     {
         try
         {
@@ -27,42 +27,45 @@ public class RepositoryBase : IRepositoryBase
                 FROM patreons 
                 WHERE (@PatreonName = '' OR PatreonName LIKE CONCAT('%', @PatreonName, '%')) 
                 ORDER BY PatreonName";
+            var response = (await db.QueryAsync<Patreon>(sql, patreon).ConfigureAwait(false)).AsList();
 
-            return (await db.QueryAsync<Patreon>(sql, patreon).ConfigureAwait(false)).AsList();            
+            return BuildResponse(response);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return new List<Patreon>();
+            return BuildError(ex);
         }
     }
 
-    public async Task<int> SavePatreon(Patreon patreon)
+    public async Task<IResult> SavePatreon(Patreon patreon)
     {
         try
         {
             var sql = (patreon.IdPatreon == 0) ? 
                 "INSERT INTO patreons (PatreonName) VALUES (@PatreonName)" : 
                 "UPDATE patreons SET PatreonName = @PatreonName WHERE IdPatreon = @IdPatreon";
+            var response = await db.ExecuteAsync(sql, patreon).ConfigureAwait(false);
 
-            return await db.ExecuteAsync(sql, patreon).ConfigureAwait(false);
+            return BuildResponse(response);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return -1;
+            return BuildError(ex);
         }
     }
 
-    public async Task<int> DeletePatreon(int id)
+    public async Task<IResult> DeletePatreon(int id)
     {
         try
         {
             var sql = "DELETE FROM patreons WHERE IdPatreon = @IdPatreon";
-
-            return await db.ExecuteAsync(sql, new { IdPatreon = id }).ConfigureAwait(false);
+            var response = await db.ExecuteAsync(sql, new { IdPatreon = id }).ConfigureAwait(false);
+            
+            return BuildResponse(response);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return -1;
+            return BuildError(ex);
         }
     }
 
@@ -70,7 +73,7 @@ public class RepositoryBase : IRepositoryBase
 
     #region Collection
 
-    public async Task<List<Collection>> SearchCollection(Collection collection)
+    public async Task<IResult> SearchCollection(Collection collection)
     {
         try
         {
@@ -81,7 +84,7 @@ public class RepositoryBase : IRepositoryBase
                     (@IdPatreon = 0 OR C.IdPatreon = @IdPatreon)
                 ORDER BY C.CollectionName";
 
-            var collections = (await db.QueryAsync<Collection, Patreon, Collection>(sql, 
+            var response = (await db.QueryAsync<Collection, Patreon, Collection>(sql,
                 (collection, patreon) => {
                     collection.Patreon = patreon;
                     return collection;
@@ -92,15 +95,16 @@ public class RepositoryBase : IRepositoryBase
                     collection.Patreon.IdPatreon,
                     collection.CollectionName
                 }).ConfigureAwait(false)).AsList();
-            return collections;
+
+            return BuildResponse(response);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return new List<Collection>();
+            return BuildError(ex);
         }
     }
 
-    public async Task<int> SaveCollection(Collection collection)
+    public async Task<IResult> SaveCollection(Collection collection)
     {
         try
         {
@@ -110,32 +114,34 @@ public class RepositoryBase : IRepositoryBase
                     IdPatreon = @IdPatreon,
                     CollectionName = @CollectionName 
                 WHERE IdCollection = @IdCollection";
-
-            return await db.ExecuteAsync(sql, 
+            var response = await db.ExecuteAsync(sql, 
                 new 
                 {
                     collection.IdCollection,
                     collection.Patreon.IdPatreon,
                     collection.CollectionName
                 }).ConfigureAwait(false);
+
+            return BuildResponse(response);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return -1;
+            return BuildError(ex);
         }
     }
 
-    public async Task<int> DeleteCollection(int id)
+    public async Task<IResult> DeleteCollection(int id)
     {
         try
         {
             var sql = "DELETE FROM collections WHERE IdCollection = @IdCollection";
+            var response = await db.ExecuteAsync(sql, new { IdCollection = id }).ConfigureAwait(false);
 
-            return await db.ExecuteAsync(sql, new { IdCollection = id }).ConfigureAwait(false);
+            return BuildResponse(response);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return -1;
+            return BuildError(ex);
         }
     }
 
@@ -143,7 +149,7 @@ public class RepositoryBase : IRepositoryBase
 
     #region Models
 
-    public async Task<List<StlModel>> SearchModel(StlModel model)
+    public async Task<IResult> SearchModel(StlModel model)
     {
         try
         {
@@ -161,7 +167,7 @@ public class RepositoryBase : IRepositoryBase
                 FROM models M
                     INNER JOIN patreons P ON M.IdPatreon = P.IdPatreon
                     LEFT JOIN modeltags MT ON MT.IdModel = M.IdModel
-                    INNER JOIN tags T ON T.IdTag = MT.IdTag                    
+                    INNER JOIN tags T ON T.IdTag = MT.IdTag 
                 WHERE (@IdPatreon = 0 OR M.IdPatreon = @IdPatreon) AND
                     (@IdCollection = 0 OR M.IdCollection = @IdCollection) AND
                     (@NoTags = 1 OR T.IdTag IN @TagIdList) AND
@@ -171,7 +177,7 @@ public class RepositoryBase : IRepositoryBase
             var tagList = model.Tag.Select(t => t.IdTag).ToArray();
             model.TagIdList = tagList;
             model.NoTags = tagList[0] != 0 ? 0 : 1;
-            var models = await db.QueryAsync<StlModel, Patreon, Tag, StlModel>(sql, 
+            var models = await db.QueryAsync<StlModel, Patreon, Tag, StlModel>(sql,
                 (model, patreon, tag) => {
                     model.Patreon = patreon;
                     model.Tag = new List<Tag>{ tag };
@@ -187,7 +193,7 @@ public class RepositoryBase : IRepositoryBase
                     model.NoTags
                 }).ConfigureAwait(false);
 
-            var results = models
+            var response = models
                 .GroupBy(p => p.IdModel)
                 .Select(g => 
                 {
@@ -202,24 +208,24 @@ public class RepositoryBase : IRepositoryBase
                 })
                 .AsList();
        
-            return results;        
+            return BuildResponse(response);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return new List<StlModel>();
+            return BuildError(ex);
         }
     }
     
-    public async Task<int> SaveModel(StlModel model)
+    public async Task<IResult> SaveModel(StlModel model)
     {
         try
         {
             bool isNewModel = model.IdModel == 0;
             int modelSave = 0, modelTagDelete = 0, modelTagInsert = 0, modelId = 0;
-            var sql = isNewModel ? 
+            var sql = isNewModel ?
                 "INSERT INTO models (IdPatreon, IdCollection, ModelName, Year, Month, Path) VALUES (@IdPatreon, @IdCollection, @ModelName, @Year, @Month, @Path); SELECT LAST_INSERT_ID()" :
                 "UPDATE models SET IdPatreon = @IdPatreon, IdCollection = @IdCollection, ModelName = @ModelName, Year = @Year, Month = @Month, Path = @Path WHERE IdModel = @IdModel";
-            modelSave = await db.ExecuteScalarAsync<int>(sql, 
+            modelSave = await db.ExecuteScalarAsync<int>(sql,
                 new 
                 {
                     model.IdModel,
@@ -227,15 +233,15 @@ public class RepositoryBase : IRepositoryBase
                     model.IdCollection,
                     model.ModelName,
                     model.Year,
-                    model.Month,                    
+                    model.Month,
                     model.Path
                 }).ConfigureAwait(false);
 
             modelId = isNewModel ? modelSave : model.IdModel;
 
-            if (model.Tag != null && model.Tag.Count > 0) 
+            if (model.Tag != null && model.Tag.Count > 0)
             {
-                if (!isNewModel) 
+                if (!isNewModel)
                 {
                     sql = "DELETE FROM modeltags WHERE IdModel = @IdModel";
                     modelTagDelete = await db.ExecuteAsync(sql, model).ConfigureAwait(false);
@@ -243,7 +249,7 @@ public class RepositoryBase : IRepositoryBase
 
                 sql = "INSERT INTO modeltags (IdTag, IdModel) VALUES (@IdTag, @IdModel)";
                 model.Tag.ForEach(async tag => {
-                    modelTagInsert = await db.ExecuteAsync(sql, 
+                    modelTagInsert = await db.ExecuteAsync(sql,
                         new 
                         {
                             tag.IdTag,
@@ -251,38 +257,40 @@ public class RepositoryBase : IRepositoryBase
                         }).ConfigureAwait(false);
                 }); 
             }
+            var response = modelSave + modelTagDelete + modelTagInsert;
 
-            return modelSave + modelTagDelete + modelTagInsert;
+            return BuildResponse(response);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return -1;
+            return BuildError(ex);
         }
     }
 
-    public async Task<List<Photo>> GetPhotos(int idModel)
+    public async Task<IResult> GetPhotos(int idModel)
     {
         try
         {
             var sql = @"SELECT idPhoto, Image
                         FROM photos
                         WHERE idModel = @IdModel";
-
-            return (await db.QueryAsync<Photo>(sql, new { IdModel = idModel }).ConfigureAwait(false)).AsList();
+            var response = (await db.QueryAsync<Photo>(sql, new { IdModel = idModel }).ConfigureAwait(false)).AsList();
+            
+            return BuildResponse(response);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return new List<Photo>();
+            return BuildError(ex);
         }
     }
 
-        public async Task<int> SavePhoto(int idModel, IFormFile photo)
+    public async Task<IResult> SavePhoto(int idModel, IFormFile photo)
     {
         try
         {
             if (photo == null || photo.Length == 0) 
             {
-                return 0;
+                return BuildError(new Exception("No data received"), 400);
             }
             byte[]? photoBytes = null;
 
@@ -298,51 +306,36 @@ public class RepositoryBase : IRepositoryBase
             parameters.Add("@Photo", photoBytes, DbType.Binary, ParameterDirection.Input);
             
             string sql = "INSERT INTO photos (IdModel, Image) VALUES (@IdModel, @Photo); SELECT LAST_INSERT_ID()";
-            int photoSaving = await db.ExecuteScalarAsync<int>(sql, parameters).ConfigureAwait(false);
+            int response = await db.ExecuteScalarAsync<int>(sql, parameters).ConfigureAwait(false);
 
-            return photoSaving;
+            return BuildResponse(response);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return -1;
+            return BuildError(ex);
         }
     }
 
-    public async Task<int> DeletePhoto(int idPhoto)
+    public async Task<IResult> DeletePhoto(int idPhoto)
     {
         try
         {
             var sql = "DELETE FROM photos WHERE IdPhoto = @IdPhoto";
-            return await db.ExecuteAsync(sql, 
+            var response = await db.ExecuteAsync(sql, 
             new 
             { 
                 IdPhoto = idPhoto 
-            }).ConfigureAwait(false);  
+            }).ConfigureAwait(false);
+
+            return BuildResponse(response);  
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return -1;
+            return BuildError(ex);
         }
     }
 
-    private async Task<int> DeletePhotos(int idModel)
-    {
-        try
-        {
-            var sql = "DELETE FROM photos WHERE IdModel = @IdModel";
-            return await db.ExecuteAsync(sql, 
-            new 
-            { 
-                IdModel = idModel 
-            }).ConfigureAwait(false);            
-        }
-        catch (Exception)
-        {
-            return -1;
-        }
-    }
-
-    public async Task<int> DeleteModel(int id)
+    public async Task<IResult> DeleteModel(int id)
     {
         try
         {
@@ -352,28 +345,20 @@ public class RepositoryBase : IRepositoryBase
 
             if (modelDelete > 0)
             {
-                modelPhotoDelete = await DeletePhotos(id);
+            sql = "DELETE FROM photos WHERE IdModel = @IdModel";
+            modelPhotoDelete = await db.ExecuteAsync(sql, 
+            new 
+            { 
+                IdModel = id 
+            }).ConfigureAwait(false);  
             } 
+            var response = modelDelete + modelPhotoDelete;
 
-            return modelDelete + modelPhotoDelete;        
+            return BuildResponse(response);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return -1;
-        }
-    }
-
-    public async Task<List<int>> GetModelYears()
-    {
-        try
-        {
-            var sql = @"SELECT DISTINCT Year FROM models ORDER BY Year";
-
-            return (await db.QueryAsync<int>(sql).ConfigureAwait(false)).AsList();
-        }
-        catch (Exception)
-        {
-            return new List<int>();
+            return BuildError(ex);
         }
     }
 
@@ -381,7 +366,7 @@ public class RepositoryBase : IRepositoryBase
 
     #region Tags
 
-    public async Task<List<Tag>> SearchTag(Tag tag)
+    public async Task<IResult> SearchTag(Tag tag)
     {
         try
         {
@@ -389,43 +374,55 @@ public class RepositoryBase : IRepositoryBase
                 FROM tags 
                 WHERE (@TagName = '' OR TagName LIKE CONCAT('%', @TagName, '%')) 
                 ORDER BY TagName";
+            var response = (await db.QueryAsync<Tag>(sql, tag).ConfigureAwait(false)).AsList();
 
-            return (await db.QueryAsync<Tag>(sql, tag).ConfigureAwait(false)).AsList();            
+            return BuildResponse(response);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return new List<Tag>();
+            return BuildError(ex);
         }
     }
 
-    public async Task<int> SaveTag(Tag tag)
+    public async Task<IResult> SaveTag(Tag tag)
     {
         try
         {
             var sql = (tag.IdTag == 0) ? 
                 "INSERT INTO tags (TagName) VALUES (@TagName)" : 
                 "UPDATE tags SET TagName = @TagName WHERE IdTag = @IdTag";
+            var response = await db.ExecuteAsync(sql, tag).ConfigureAwait(false);
 
-            return await db.ExecuteAsync(sql, tag).ConfigureAwait(false);            
+            return BuildResponse(response);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return -1;
+            return BuildError(ex);
         }
     }
 
-    public async Task<int> DeleteTag(int id)
+    public async Task<IResult> DeleteTag(int id)
     {
         try
         {
             var sql = "DELETE FROM tags WHERE IdTag = @IdTag";
+            var response = await db.ExecuteAsync(sql, new { IdTag = id }).ConfigureAwait(false);
 
-            return await db.ExecuteAsync(sql, new { IdTag = id }).ConfigureAwait(false);
+            return BuildResponse(response);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return -1;
+            return BuildError(ex);
         }        
+    }
+
+    private static IResult BuildResponse(dynamic items)
+    {
+        return Results.Json(items, statusCode: 200);
+    }
+    private static IResult BuildError(Exception ex, int errorCode = 500)
+    {
+        return Results.Json(ex, statusCode: errorCode);
     }
 
     #endregion

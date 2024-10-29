@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import * as patreonService from '../services/patreon'
+import { returnResponse } from '../../defaults/global'
 
 export const useGetPatreons = (patreonObject) => {
   const [isLoading, setIsLoading] = useState(false)
@@ -7,11 +8,14 @@ export const useGetPatreons = (patreonObject) => {
   const [refresh, setRefresh] = useState(false)
 
   useEffect(() => {
-    setIsLoading(true)
-    patreonService.getPatreons(patreonObject).then((patreons) => {
-      setPatreons(patreons)
-      setIsLoading(false)
-    })
+    async function getData() {
+      setIsLoading(true)
+      await patreonService.getPatreons(patreonObject).then((response) => {
+        setPatreons(returnResponse(response))
+        setIsLoading(false)
+      })
+    }
+    getData()
   }, [refresh])
 
   const refreshPatreons = () => {
@@ -21,21 +25,41 @@ export const useGetPatreons = (patreonObject) => {
 }
 
 export const useCreatePatreon = () => {
-  const createPatreon = (patreonObject) => {
-    return patreonService.createPatreon(patreonObject)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const createPatreon = async (patreonObject) => {
+    setIsLoading(true)
+    return await patreonService.createPatreon(patreonObject).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
   }
-  return { createPatreon }
+  return { createPatreon, isLoading }
 }
 
 export const useUpdatePatreon = () => {
-  const updatePatreon = (patreonObject) => {
-    return patreonService.updatePatreon(patreonObject)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const updatePatreon = async (patreonObject) => {
+    setIsLoading(true)
+    return await patreonService.updatePatreon(patreonObject).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
   }
-  return { updatePatreon }
+  return { updatePatreon, isLoading }
 }
 
 export const useDeletePatreon = () => {
-  const deletePatreon = (patreonId) => patreonService.deletePatreon(patreonId)
+  const [isLoading, setIsLoading] = useState(false)
 
-  return { deletePatreon }
+  const deletePatreon = async (patreonId) => {
+    setIsLoading(true)
+    return await patreonService.deletePatreon(patreonId).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
+  }
+
+  return { deletePatreon, isLoading }
 }

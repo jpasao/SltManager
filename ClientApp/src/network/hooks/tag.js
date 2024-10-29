@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import * as tagService from '../services/tag'
+import { returnResponse } from '../../defaults/global'
 
 export const useGetTags = (tagObject) => {
   const [isLoading, setIsLoading] = useState(false)
@@ -7,11 +8,14 @@ export const useGetTags = (tagObject) => {
   const [refresh, setRefresh] = useState(false)
 
   useEffect(() => {
-    setIsLoading(true)
-    tagService.getTags(tagObject).then((tags) => {
-      setTags(tags)
-      setIsLoading(false)
-    })
+    async function getData() {
+      setIsLoading(true)
+      await tagService.getTags(tagObject).then((response) => {
+        setTags(returnResponse(response))
+        setIsLoading(false)
+      })
+    }
+    getData()
   }, [refresh])
 
   const refreshTags = () => {
@@ -22,21 +26,41 @@ export const useGetTags = (tagObject) => {
 }
 
 export const useCreateTag = () => {
-  const createTag = (tagObject) => {
-    return tagService.createTag(tagObject)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const createTag = async (tagObject) => {
+    setIsLoading(true)
+    return await tagService.createTag(tagObject).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
   }
-  return { createTag }
+  return { createTag, isLoading }
 }
 
 export const useUpdateTag = () => {
-  const updateTag = (tagObject) => {
-    return tagService.updateTag(tagObject)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const updateTag = async (tagObject) => {
+    setIsLoading(true)
+    return await tagService.updateTag(tagObject).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
   }
-  return { updateTag }
+  return { updateTag, isLoading }
 }
 
 export const useDeleteTag = () => {
-  const deleteTag = (tagId) => tagService.deleteTag(tagId)
+  const [isLoading, setIsLoading] = useState(false)
 
-  return { deleteTag }
+  const deleteTag = async (tagId) => {
+    setIsLoading(true)
+    return await tagService.deleteTag(tagId).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
+  }
+
+  return { deleteTag, isLoading }
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import * as collectionService from '../services/collection'
+import { returnResponse } from '../../defaults/global'
 
 export const useGetCollections = (collectionObject) => {
   const [isLoading, setIsLoading] = useState(false)
@@ -7,11 +8,14 @@ export const useGetCollections = (collectionObject) => {
   const [refresh, setRefresh] = useState(false)
 
   useEffect(() => {
-    setIsLoading(true)
-    collectionService.getCollections(collectionObject).then((collections) => {
-      setCollections(collections)
-      setIsLoading(false)
-    })
+    async function getData() {
+      setIsLoading(true)
+      await collectionService.getCollections(collectionObject).then((response) => {
+        setIsLoading(false)
+        setCollections(returnResponse(response))
+      })
+    }
+    getData()
   }, [refresh])
 
   const refreshCollections = () => {
@@ -21,21 +25,41 @@ export const useGetCollections = (collectionObject) => {
 }
 
 export const useCreateCollection = () => {
-  const createCollection = (collectionObject) => {
-    return collectionService.createCollection(collectionObject)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const createCollection = async (collectionObject) => {
+    setIsLoading(true)
+    return await collectionService.createCollection(collectionObject).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
   }
-  return { createCollection }
+  return { createCollection, isLoading }
 }
 
 export const useUpdateCollection = () => {
-  const updateCollection = (collectionObject) => {
-    return collectionService.updateCollection(collectionObject)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const updateCollection = async (collectionObject) => {
+    setIsLoading(true)
+    return await collectionService.updateCollection(collectionObject).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
   }
-  return { updateCollection }
+  return { updateCollection, isLoading }
 }
 
 export const useDeleteCollection = () => {
-  const deleteCollection = (collectionId) => collectionService.deleteCollection(collectionId)
+  const [isLoading, setIsLoading] = useState(false)
 
-  return { deleteCollection }
+  const deleteCollection = async (collectionId) => {
+    setIsLoading(true)
+    return await collectionService.deleteCollection(collectionId).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
+  }
+
+  return { deleteCollection, isLoading }
 }
