@@ -9,6 +9,7 @@ import {
   useUpdateModel,
   useDeletePhoto,
   useCreatePhoto,
+  useGetDependencies,
 } from '../../network/hooks/model'
 import { useGetPatreons, useCreatePatreon } from '../../network/hooks/patreon'
 import { useGetCollections, useCreateCollection } from '../../network/hooks/collection'
@@ -35,6 +36,7 @@ import {
 } from '@coreui/react'
 import NoImage from '/no-image.png'
 import Toast from '../../components/ToastComponent'
+import DependencyComponent from '../../components/DependencyComponent'
 import SignalRConnector from '../../network/adapters/signalr'
 
 const ModelSave = () => {
@@ -45,6 +47,7 @@ const ModelSave = () => {
   const { getPhotos, isLoading: isFetchingPhotos } = useGetPhotos()
   const { deletePhoto, isLoading: isDeletingPhoto } = useDeletePhoto()
   const { createPhoto, isLoading: isCreatingPhoto } = useCreatePhoto()
+  const { getDependencies, isLoading: isGettingDependencies } = useGetDependencies()
   const { patreons, refreshPatreons } = useGetPatreons(defaultPatreon)
   const { createPatreon } = useCreatePatreon()
   const [searchCollection, setSearchCollection] = useState(defaultCollection)
@@ -52,6 +55,7 @@ const ModelSave = () => {
   const { createCollection } = useCreateCollection()
   const { tags, refreshTags } = useGetTags(defaultTag)
   const { createTag } = useCreateTag()
+  const [dependencies, setDependencies] = useState([])
   const [validated, setValidated] = useState(false)
   const [years, setYears] = useState([])
   const selectClass = useRef({})
@@ -67,7 +71,12 @@ const ModelSave = () => {
     addToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
 
   const isLoading =
-    isCreatingItem || isUpdatingItem || isFetchingPhotos || isDeletingPhoto || isCreatingPhoto
+    isCreatingItem ||
+    isUpdatingItem ||
+    isFetchingPhotos ||
+    isDeletingPhoto ||
+    isCreatingPhoto ||
+    isGettingDependencies
 
   let modelToSave = defaultModel
   const requiredSelectFields = ['Patreon', 'Tag']
@@ -95,6 +104,10 @@ const ModelSave = () => {
           TagIdList: selectedTags,
         },
       )
+      async function getDependencies() {
+        await checkDependencies(modelToSave)
+      }
+      getDependencies()
       setModel(modelToSave)
 
       getPhotos(modelToSave.IdModel).then((photos) => {
@@ -376,6 +389,18 @@ const ModelSave = () => {
         resultToast(`Hubo un problema al guardar la etiqueta '${tagName}': ${error}`, 'danger'),
     )
   }
+  const checkDependencies = async (model) => {
+    await getDependencies(model.IdModel).then(
+      (dependencies) => {
+        setDependencies(dependencies)
+      },
+      (error) =>
+        resultToast(
+          `Hubo un problema al comprobar las dependencias del modelo: ${error}`,
+          'danger',
+        ),
+    )
+  }
 
   return (
     <CRow>
@@ -588,6 +613,7 @@ const ModelSave = () => {
               </CRow>
             </CForm>
             <div className="clearfix imageThumbnails">
+              <p>{model?.Image?.length ? `Fotos de '${model.ModelName}'` : ''}</p>
               {model?.Image?.length ? (
                 model.Image.map((element) => (
                   <span key={element.IdPhoto}>
@@ -607,6 +633,13 @@ const ModelSave = () => {
             </div>
           </CCardBody>
         </CCard>
+      </CCol>
+      <CCol xs={12}>
+        <DependencyComponent
+          name={model.ModelName}
+          dependencies={dependencies}
+          isEditing={location.state}
+        />
       </CCol>
       <CToaster className="p-3" placement="top-end" push={toast} ref={toaster} />
     </CRow>

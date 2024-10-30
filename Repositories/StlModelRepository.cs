@@ -232,4 +232,34 @@ public class StlModelRepository : IStlModelRepository
         }
     }
 
+    public async Task<IResult> GetDependencies(int id)
+    {
+        try
+        {
+            var sql = @"
+                SELECT P.PatreonName AS Name, 'Patreons' AS Category 
+                FROM patreons P
+                    INNER JOIN models M ON M.IdPatreon = P.IdPatreon
+                WHERE M.IdModel = @IdModel
+                UNION
+                SELECT C.CollectionName as Name, 'Colecciones' AS Category
+                FROM collections C
+                    INNER JOIN models M ON M.IdCollection = C.IdCollection
+                WHERE M.IdModel = @IdModel
+                UNION 
+                SELECT T.TagName AS Name, 'Etiquetas' AS Category
+                FROM tags T
+                    INNER JOIN modeltags MT ON T.IdTag = MT.IdTag
+                    INNER JOIN models M ON M.IdModel = MT.IdModel
+                WHERE M.IdModel = @IdModel
+                ORDER BY Category, Name";
+            var response = await db.QueryAsync<Dependency>(sql, new { IdModel = id }).ConfigureAwait(false);
+
+            return Response.BuildResponse(response);
+        }
+        catch (Exception ex)
+        {
+            return Response.BuildError(ex);
+        }
+    }
 }

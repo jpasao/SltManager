@@ -17,3 +17,6 @@ export const createPhoto = async (photo, modelId) =>
 
 export const deletePhoto = async (photoId) =>
   await deleteItem(`${modelResource}/Photo?id=${photoId}`)
+
+export const getDependencies = async (modelId) =>
+  await get(`${modelResource}/Dependency?id=${modelId}`)

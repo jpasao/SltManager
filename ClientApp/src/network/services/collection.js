@@ -1,4 +1,4 @@
-import { post, put, deleteItem } from '../adapters/api'
+import { get, post, put, deleteItem } from '../adapters/api'
 
 const collectionResource = 'Collection'
 
@@ -12,3 +12,6 @@ export const updateCollection = async (collectionObj) =>
 
 export const deleteCollection = async (collectionId) =>
   await deleteItem(`${collectionResource}?id=${collectionId}`)
+
+export const getDependencies = async (collectionId) =>
+  await get(`${collectionResource}/Dependency?id=${collectionId}`)

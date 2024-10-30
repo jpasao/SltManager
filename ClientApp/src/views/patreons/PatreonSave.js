@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   CCard,
@@ -9,14 +9,14 @@ import {
   CButton,
   CFormInput,
   CForm,
-  CCallout,
-  CBadge,
+  CToaster,
 } from '@coreui/react'
-import { useCreatePatreon, useUpdatePatreon } from '../../network/hooks/patreon'
-import { useGetCollections } from '../../network/hooks/collection'
+import { useCreatePatreon, useUpdatePatreon, useGetDependencies } from '../../network/hooks/patreon'
 import { defaultCollection } from '../../defaults/collection'
 import { defaultPatreon } from '../../defaults/patreon'
 import { routeNames } from '../../defaults/global'
+import Toast from '../../components/ToastComponent'
+import DependencyComponent from '../../components/DependencyComponent'
 
 const PatreonSave = () => {
   const patreonCollection = defaultCollection
@@ -26,12 +26,19 @@ const PatreonSave = () => {
   const method = editingPatreon ? 'put' : 'post'
   const { updatePatreon, isLoading: isUpdatingItem } = useUpdatePatreon()
   const { createPatreon, isLoading: isCreatingItem } = useCreatePatreon()
-  const { collections, refreshCollections } = useGetCollections(patreonCollection)
+  const { getDependencies, isLoading: isGettingDependencies } = useGetDependencies()
+  const [dependencies, setDependencies] = useState([])
   const [validated, setValidated] = useState(false)
   const [patreon, setPatreon] = useState(defaultPatreon)
+  const [toast, addToast] = useState(0)
+  const toaster = useRef()
+
+  const resultToast = (message, color) =>
+    addToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
+
   let patreonToSave = defaultPatreon
 
-  const isLoading = isCreatingItem || isUpdatingItem
+  const isLoading = isCreatingItem || isUpdatingItem || isGettingDependencies
 
   useEffect(() => {
     if (editingPatreon) {
@@ -43,10 +50,11 @@ const PatreonSave = () => {
           PatreonName: patreonToSave.PatreonName,
         },
       )
+      async function getDependencies() {
+        await checkDependencies(patreonToSave)
+      }
+      getDependencies()
     }
-    const idPatreon = patreonToSave.IdPatreon === 0 ? -1 : patreonToSave.IdPatreon
-    patreonCollection.Patreon.IdPatreon = idPatreon
-    refreshCollections()
     setPatreon(patreonToSave)
   }, [defaultPatreon])
 
@@ -79,21 +87,18 @@ const PatreonSave = () => {
     const modifiedPatreon = { PatreonName: event.target.value, ...rest }
     setPatreon(modifiedPatreon)
   }
-  const collectionOutput =
-    collections.length === 0 ? (
-      ''
-    ) : (
-      <CCol>
-        <span>Colecciones: </span>
-        <CCallout color="light">
-          {collections.map((collection) => (
-            <CBadge key={collection.IdCollection} color="secondary" style={{ marginRight: '5px' }}>
-              {collection.CollectionName}
-            </CBadge>
-          ))}
-        </CCallout>
-      </CCol>
+  const checkDependencies = async (patreon) => {
+    await getDependencies(patreon.IdPatreon).then(
+      (dependencies) => {
+        setDependencies(dependencies)
+      },
+      (error) =>
+        resultToast(
+          `Hubo un problema al comprobar las dependencias del Patreon: ${error}`,
+          'danger',
+        ),
     )
+  }
 
   return (
     <CRow>
@@ -136,11 +141,18 @@ const PatreonSave = () => {
                   </CButton>
                 </CCol>
               </CRow>
-              <CRow>{collectionOutput}</CRow>
             </CForm>
           </CCardBody>
         </CCard>
       </CCol>
+      <CCol xs={12}>
+        <DependencyComponent
+          name={patreon.PatreonName}
+          dependencies={dependencies}
+          isEditing={location.state}
+        />
+      </CCol>
+      <CToaster className="p-3" placement="top-end" push={toast} ref={toaster} />
     </CRow>
   )
 }

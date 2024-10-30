@@ -103,3 +103,17 @@ export const useDeletePhoto = () => {
   }
   return { deletePhoto, isLoading }
 }
+
+export const useGetDependencies = () => {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const getDependencies = async (modelId) => {
+    setIsLoading(true)
+    return await modelService.getDependencies(modelId).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
+  }
+
+  return { getDependencies, isLoading }
+}

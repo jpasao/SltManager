@@ -40,4 +40,10 @@ public class TagController : ControllerBase
     {
         return await repository.DeleteTag(id);
     }
+
+    [HttpGet("Dependency")]
+    public async Task<IResult> Dependencies(int id)
+    {
+        return await repository.GetDependencies(id);
+    }
 }

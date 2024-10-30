@@ -68,4 +68,29 @@ public class PatreonRepository : IPatreonRepository
             return Response.BuildError(ex);
         }
     }
+
+    public async Task<IResult> GetDependencies(int id)
+    {
+        try
+        {
+            var sql = @"
+                SELECT M.ModelName AS Name, 'Modelos' AS Category 
+                FROM patreons P
+                    INNER JOIN models M ON M.IdPatreon = P.IdPatreon
+                WHERE P.IdPatreon = @IdPatreon
+                UNION
+                SELECT C.CollectionName as Name, 'Colecciones' AS Category
+                FROM collections C
+                    INNER JOIN patreons P ON P.IdPatreon = C.IdPatreon
+                WHERE P.IdPatreon = @IdPatreon
+                ORDER BY Category, Name";
+            var response = await db.QueryAsync<Dependency>(sql, new { IdPatreon = id }).ConfigureAwait(false);
+
+            return Response.BuildResponse(response);
+        }
+        catch (Exception ex)
+        {
+            return Response.BuildError(ex);
+        }
+    }
 }

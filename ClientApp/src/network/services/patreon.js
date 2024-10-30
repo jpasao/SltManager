@@ -1,4 +1,4 @@
-import { post, put, deleteItem } from '../adapters/api'
+import { get, post, put, deleteItem } from '../adapters/api'
 
 const patreonResource = 'Patreon'
 
@@ -10,3 +10,6 @@ export const updatePatreon = async (patreonObj) => await put(patreonResource, pa
 
 export const deletePatreon = async (patreonId) =>
   await deleteItem(`${patreonResource}?id=${patreonId}`)
+
+export const getDependencies = async (patreonId) =>
+  await get(`${patreonResource}/Dependency?id=${patreonId}`)

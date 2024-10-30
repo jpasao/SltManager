@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 
-namespace stl;
+namespace stl.Models;
 
 public class PathHub : Hub
 {

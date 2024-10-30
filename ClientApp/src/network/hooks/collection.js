@@ -63,3 +63,17 @@ export const useDeleteCollection = () => {
 
   return { deleteCollection, isLoading }
 }
+
+export const useGetDependencies = () => {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const getDependencies = async (collectionId) => {
+    setIsLoading(true)
+    return await collectionService.getDependencies(collectionId).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
+  }
+
+  return { getDependencies, isLoading }
+}

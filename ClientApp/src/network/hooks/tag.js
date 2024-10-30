@@ -64,3 +64,17 @@ export const useDeleteTag = () => {
 
   return { deleteTag, isLoading }
 }
+
+export const useGetDependencies = () => {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const getDependencies = async (tagId) => {
+    setIsLoading(true)
+    return await tagService.getDependencies(tagId).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
+  }
+
+  return { getDependencies, isLoading }
+}

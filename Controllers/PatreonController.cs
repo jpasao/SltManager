@@ -40,4 +40,10 @@ public class PatreonController : ControllerBase
     {
         return await repository.DeletePatreon(id);
     }
+
+    [HttpGet("Dependency")]
+    public async Task<IResult> Dependencies(int id)
+    {
+        return await repository.GetDependencies(id);
+    }    
 }

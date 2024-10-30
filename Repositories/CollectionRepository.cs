@@ -90,5 +90,30 @@ public class CollectionRepository : ICollectionRepository
             return Response.BuildError(ex);
         }
     }
+
+    public async Task<IResult> GetDependencies(int id)
+    {
+        try
+        {
+            var sql = @"
+                SELECT M.ModelName as Name, 'Modelos' AS Category
+                FROM collections C
+                    INNER JOIN models M ON M.IdCollection = C.IdCollection
+                WHERE C.IdCollection = @IdCollection
+                UNION 
+                SELECT P.PatreonName as Name, 'Patreons' AS Category
+                FROM collections C 
+                    INNER JOIN patreons P ON C.IdPatreon = P.IdPatreon
+                WHERE C.IdCollection = @IdCollection
+                ORDER BY Category, Name";
+            var response = await db.QueryAsync<Dependency>(sql, new { IdCollection = id }).ConfigureAwait(false);
+
+            return Response.BuildResponse(response);
+        }
+        catch (Exception ex)
+        {
+            return Response.BuildError(ex);
+        }
+    }
 }
 

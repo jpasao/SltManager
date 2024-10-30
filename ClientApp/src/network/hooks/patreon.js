@@ -63,3 +63,17 @@ export const useDeletePatreon = () => {
 
   return { deletePatreon, isLoading }
 }
+
+export const useGetDependencies = () => {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const getDependencies = async (patreonId) => {
+    setIsLoading(true)
+    return await patreonService.getDependencies(patreonId).then((response) => {
+      setIsLoading(false)
+      return returnResponse(response)
+    })
+  }
+
+  return { getDependencies, isLoading }
+}

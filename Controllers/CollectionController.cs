@@ -40,4 +40,10 @@ public class CollectionController : ControllerBase
     {
         return await repository.DeleteCollection(id);
     }
+
+    [HttpGet("Dependency")]
+    public async Task<IResult> Dependencies(int id)
+    {
+        return await repository.GetDependencies(id);
+    } 
 }

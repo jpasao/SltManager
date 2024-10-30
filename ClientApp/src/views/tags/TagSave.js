@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   CCard,
@@ -9,10 +9,13 @@ import {
   CButton,
   CFormInput,
   CForm,
+  CToaster,
 } from '@coreui/react'
-import { useCreateTag, useUpdateTag } from '../../network/hooks/tag'
+import { useCreateTag, useUpdateTag, useGetDependencies } from '../../network/hooks/tag'
 import { defaultTag } from '../../defaults/tag'
 import { routeNames } from '../../defaults/global'
+import Toast from '../../components/ToastComponent'
+import DependencyComponent from '../../components/DependencyComponent'
 
 const TagSave = () => {
   const location = useLocation()
@@ -21,10 +24,17 @@ const TagSave = () => {
   const method = editingTag ? 'put' : 'post'
   const { updateTag, isLoading: isUpdatingItem } = useUpdateTag()
   const { createTag, isLoading: isCreatingItem } = useCreateTag()
+  const { getDependencies, isLoading: isGettingDependencies } = useGetDependencies()
+  const [dependencies, setDependencies] = useState([])
   const [validated, setValidated] = useState(false)
   const [tag, setTag] = useState(defaultTag)
+  const [toast, addToast] = useState(0)
+  const toaster = useRef()
 
-  const isLoading = isCreatingItem || isUpdatingItem
+  const resultToast = (message, color) =>
+    addToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
+
+  const isLoading = isCreatingItem || isUpdatingItem || isGettingDependencies
   let tagToSave = defaultTag
 
   useEffect(() => {
@@ -37,6 +47,10 @@ const TagSave = () => {
           TagName: tagToSave.TagName,
         },
       )
+      async function getDependencies() {
+        await checkDependencies(tagToSave)
+      }
+      getDependencies()
     }
     setTag(tagToSave)
   }, [defaultTag])
@@ -79,6 +93,18 @@ const TagSave = () => {
     const modifiedTag = { TagName: event.target.value, ...rest }
     setTag(modifiedTag)
   }
+  const checkDependencies = async (tag) => {
+    await getDependencies(tag.IdTag).then(
+      (dependencies) => {
+        setDependencies(dependencies)
+      },
+      (error) =>
+        resultToast(
+          `Hubo un problema al comprobar las dependencias de la etiqueta: ${error}`,
+          'danger',
+        ),
+    )
+  }
 
   return (
     <CRow>
@@ -114,6 +140,14 @@ const TagSave = () => {
           </CCardBody>
         </CCard>
       </CCol>
+      <CCol xs={12}>
+        <DependencyComponent
+          name={tag.TagName}
+          dependencies={dependencies}
+          isEditing={location.state}
+        />
+      </CCol>
+      <CToaster className="p-3" placement="top-end" push={toast} ref={toaster} />
     </CRow>
   )
 }

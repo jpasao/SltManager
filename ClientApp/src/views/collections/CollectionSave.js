@@ -10,21 +10,29 @@ import {
   CButton,
   CFormInput,
   CForm,
+  CToaster,
 } from '@coreui/react'
-import { useCreateCollection, useUpdateCollection } from '../../network/hooks/collection'
+import {
+  useCreateCollection,
+  useUpdateCollection,
+  useGetDependencies,
+} from '../../network/hooks/collection'
 import { useGetPatreons, useCreatePatreon } from '../../network/hooks/patreon'
 import { defaultCollection } from '../../defaults/collection'
 import { defaultPatreon } from '../../defaults/patreon'
 import { routeNames, invalidSelectMessage } from '../../defaults/global'
 import Toast from '../../components/ToastComponent'
+import DependencyComponent from '../../components/DependencyComponent'
 
 const CollectionSave = () => {
   const location = useLocation()
   const navigateTo = useNavigate()
   const { updateCollection, isLoading: isUpdatingItem } = useUpdateCollection()
   const { createCollection, isLoading: isCreatingItem } = useCreateCollection()
+  const { getDependencies, isLoading: isGettingDependencies } = useGetDependencies()
   const { patreons, refreshPatreons } = useGetPatreons(defaultPatreon)
   const { createPatreon } = useCreatePatreon()
+  const [dependencies, setDependencies] = useState([])
   const [validated, setValidated] = useState(false)
   const selectClass = useRef({})
   const selectErrorMessage = useRef({})
@@ -34,7 +42,7 @@ const CollectionSave = () => {
   const resultToast = (message, color) =>
     addToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
 
-  const isLoading = isCreatingItem || isUpdatingItem
+  const isLoading = isCreatingItem || isUpdatingItem || isGettingDependencies
 
   let collectionToSave = defaultCollection
   const editingCollection = location.state !== null
@@ -52,6 +60,10 @@ const CollectionSave = () => {
           Patreon: collectionToSave.Patreon,
         },
       )
+      async function getDependencies() {
+        await checkDependencies(collectionToSave)
+      }
+      getDependencies()
     }
     setCollection(collectionToSave)
   }, [defaultCollection])
@@ -135,6 +147,18 @@ const CollectionSave = () => {
     }
     return false
   }
+  const checkDependencies = async (collection) => {
+    await getDependencies(collection.IdCollection).then(
+      (dependencies) => {
+        setDependencies(dependencies)
+      },
+      (error) =>
+        resultToast(
+          `Hubo un problema al comprobar las dependencias de la colección: ${error}`,
+          'danger',
+        ),
+    )
+  }
 
   return (
     <CRow>
@@ -213,6 +237,14 @@ const CollectionSave = () => {
           </CCardBody>
         </CCard>
       </CCol>
+      <CCol xs={12}>
+        <DependencyComponent
+          name={collection.CollectionName}
+          dependencies={dependencies}
+          isEditing={location.state}
+        />
+      </CCol>
+      <CToaster className="p-3" placement="top-end" push={toast} ref={toaster} />
     </CRow>
   )
 }

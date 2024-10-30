@@ -2,7 +2,7 @@ using stl.Models;
 
 namespace stl.Interfaces;
 
-internal interface IStlModelRepository
+interface IStlModelRepository
 {
     Task<IResult> SearchModel(StlModel model);
     
@@ -14,5 +14,7 @@ internal interface IStlModelRepository
 
     Task<IResult> DeletePhoto(int idPhoto);
     
-    Task<IResult> DeleteModel(int id); 
+    Task<IResult> DeleteModel(int id);
+
+    Task<IResult> GetDependencies(int id);
 }

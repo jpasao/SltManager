@@ -58,5 +58,11 @@ public class StlModelController : ControllerBase
     {
         return await repository.DeleteModel(id);
     }
+
+    [HttpGet("Dependency")]
+    public async Task<IResult> Dependencies(int id)
+    {
+        return await repository.GetDependencies(id);
+    }
 }
 
