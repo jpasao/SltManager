@@ -124,7 +124,7 @@ const PatreonSave = () => {
               onSubmit={handleSave}
             >
               <CRow xs={{ gutter: 2 }}>
-                <CCol xs={9}>
+                <CCol xs={12} md={9}>
                   <CFormInput
                     type="text"
                     id="patreonName"
@@ -138,7 +138,7 @@ const PatreonSave = () => {
                     required
                   />
                 </CCol>
-                <CCol xs={3}>
+                <CCol xs={12} md={3}>
                   <CButton
                     color="primary"
                     className="alignRight"

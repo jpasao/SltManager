@@ -224,7 +224,7 @@ const CollectionSearch = () => {
             <CForm noValidate onSubmit={handleSearch}>
               <CCollapse visible={visible}>
                 <CRow xs={{ gutter: 2 }}>
-                  <CCol xs={5}>
+                  <CCol xs={12} md={5}>
                     <CFormInput
                       type="text"
                       id="collectionName"
@@ -235,7 +235,7 @@ const CollectionSearch = () => {
                       placeholder="Filtra las colecciones por nombre..."
                     />
                   </CCol>
-                  <CCol xs={4}>
+                  <CCol xs={12} md={4}>
                     <CreatableSelect
                       id="patreon"
                       classNamePrefix="filter"
@@ -254,7 +254,7 @@ const CollectionSearch = () => {
                       Patreon
                     </label>
                   </CCol>
-                  <CCol xs>
+                  <CCol xs={12} md={3}>
                     <CButton
                       as="input"
                       type="reset"
@@ -295,7 +295,7 @@ const CollectionSearch = () => {
               <CCallout color="light">No aparece nada con esa búsqueda.</CCallout>
             ) : (
               <>
-                <CTable striped bordered columns={columns} items={items} />
+                <CTable striped bordered columns={columns} items={items} responsive="sm" />
                 {pager}
               </>
             )}

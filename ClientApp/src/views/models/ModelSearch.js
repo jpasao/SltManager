@@ -399,7 +399,7 @@ const ModelSearch = () => {
             <CForm noValidate onSubmit={handleSearch}>
               <CCollapse visible={visible}>
                 <CRow xs={{ gutter: 2 }}>
-                  <CCol md>
+                  <CCol xs={12} md>
                     <CFormInput
                       type="text"
                       id="modelName"
@@ -410,7 +410,7 @@ const ModelSearch = () => {
                       placeholder="Filtra los Modelos por nombre..."
                     />
                   </CCol>
-                  <CCol>
+                  <CCol xs={12} md>
                     <CreatableSelect
                       id="patreon"
                       classNamePrefix="filter"
@@ -429,7 +429,7 @@ const ModelSearch = () => {
                       Patreon
                     </label>
                   </CCol>
-                  <CCol>
+                  <CCol xs={12} md>
                     <CreatableSelect
                       id="collection"
                       classNamePrefix="filter"
@@ -454,7 +454,7 @@ const ModelSearch = () => {
                   </CCol>
                 </CRow>
                 <CRow>
-                  <CCol sm={4}>
+                  <CCol sm={4} xs={12}>
                     <CreatableSelect
                       id="tag"
                       classNamePrefix="filter"
@@ -477,7 +477,7 @@ const ModelSearch = () => {
                     </label>
                   </CCol>
                   <CCol sm={4}></CCol>
-                  <CCol sm={4}>
+                  <CCol sm={4} xs={12}>
                     <CButton
                       color="primary"
                       className="alignRight"
@@ -518,7 +518,7 @@ const ModelSearch = () => {
               <CCallout color="light">No aparece nada con esa búsqueda.</CCallout>
             ) : (
               <>
-                <CTable striped bordered columns={columns} items={items} />
+                <CTable striped bordered columns={columns} items={items} responsive="sm" />
                 {pager}
               </>
             )}

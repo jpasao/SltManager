@@ -176,7 +176,7 @@ const CollectionSave = () => {
               onSubmit={handleSave}
             >
               <CRow>
-                <CCol xs={8}>
+                <CCol xs={12} md={8}>
                   <CFormInput
                     type="text"
                     id="collectionName"
@@ -190,7 +190,7 @@ const CollectionSave = () => {
                     required
                   />
                 </CCol>
-                <CCol xs={4}>
+                <CCol xs={12} md={4}>
                   <CreatableSelect
                     id="patreon"
                     classNamePrefix="filter"

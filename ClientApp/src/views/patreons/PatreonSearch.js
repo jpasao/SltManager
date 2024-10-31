@@ -172,7 +172,7 @@ const PatreonSearch = () => {
             <CForm noValidate onSubmit={handleSearch}>
               <CCollapse visible={visible}>
                 <CRow xs={{ gutter: 2 }}>
-                  <CCol xs={9}>
+                  <CCol xs={12} md={9}>
                     <CFormInput
                       type="text"
                       id="patreonName"
@@ -183,7 +183,7 @@ const PatreonSearch = () => {
                       placeholder="Filtra los Patreon por nombre..."
                     />
                   </CCol>
-                  <CCol xs>
+                  <CCol xs={12} md={3}>
                     <CButton
                       as="input"
                       type="reset"
@@ -224,7 +224,7 @@ const PatreonSearch = () => {
               <CCallout color="light">No aparece nada con esa búsqueda.</CCallout>
             ) : (
               <>
-                <CTable striped bordered columns={columns} items={items} />
+                <CTable striped bordered columns={columns} items={items} responsive="sm" />
                 {pager}
               </>
             )}

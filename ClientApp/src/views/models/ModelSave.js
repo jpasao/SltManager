@@ -426,7 +426,7 @@ const ModelSave = () => {
               onSubmit={handleSave}
             >
               <CRow xs={{ gutter: 2 }}>
-                <CCol md>
+                <CCol xs={12} md>
                   <CFormInput
                     type="text"
                     id="modelName"
@@ -439,7 +439,7 @@ const ModelSave = () => {
                     required
                   />
                 </CCol>
-                <CCol>
+                <CCol xs={12} md>
                   <Select
                     id="year"
                     classNamePrefix="filter"
@@ -459,7 +459,7 @@ const ModelSave = () => {
                     ¿De qué año era el modelo?
                   </div>
                 </CCol>
-                <CCol>
+                <CCol xs={12} md>
                   <Select
                     id="month"
                     classNamePrefix="filter"
@@ -488,7 +488,7 @@ const ModelSave = () => {
                 </CCol>
               </CRow>
               <CRow xs={{ gutter: 2 }}>
-                <CCol>
+                <CCol xs={12} md>
                   <CInputGroup>
                     <CButton
                       type="button"
@@ -515,7 +515,7 @@ const ModelSave = () => {
                 </CCol>
               </CRow>
               <CRow xs={{ gutter: 2 }}>
-                <CCol>
+                <CCol xs={12} md>
                   <CreatableSelect
                     id="patreon"
                     classNamePrefix="filter"
@@ -537,7 +537,7 @@ const ModelSave = () => {
                     Este modelo pertenecerá a algún Patreon...
                   </div>
                 </CCol>
-                <CCol>
+                <CCol xs={12} md>
                   <CreatableSelect
                     id="collection"
                     classNamePrefix="filter"
@@ -568,7 +568,7 @@ const ModelSave = () => {
                 </CCol>
               </CRow>
               <CRow xs={{ gutter: 2 }}>
-                <CCol>
+                <CCol xs={12} md>
                   <CreatableSelect
                     id="tag"
                     classNamePrefix="filter"
@@ -592,7 +592,7 @@ const ModelSave = () => {
                     Vamos a asignarle al menos una etiqueta...
                   </div>
                 </CCol>
-                <CCol>
+                <CCol xs={12} md>
                   <CFormInput
                     type="file"
                     id="Image"

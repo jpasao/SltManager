@@ -121,21 +121,32 @@ const TagSave = () => {
               method={method}
               onSubmit={handleSave}
             >
-              <CFormInput
-                type="text"
-                id="tagName"
-                name="tagName"
-                value={tag.TagName}
-                onChange={handleName}
-                feedbackInvalid="¿Qué es una etiqueta sin un nombre?"
-                floatingClassName="mb-3"
-                floatingLabel="Nombre"
-                placeholder="Nombre de la Etiqueta"
-                required
-              />
-              <CButton color="primary" className="alignRight" type="submit" disabled={isLoading}>
-                Guardar
-              </CButton>
+              <CRow xs={{ gutter: 2 }}>
+                <CCol xs={12} md={9}>
+                  <CFormInput
+                    type="text"
+                    id="tagName"
+                    name="tagName"
+                    value={tag.TagName}
+                    onChange={handleName}
+                    feedbackInvalid="¿Qué es una etiqueta sin un nombre?"
+                    floatingClassName="mb-3"
+                    floatingLabel="Nombre"
+                    placeholder="Nombre de la Etiqueta"
+                    required
+                  />
+                </CCol>
+                <CCol xs={12} md={3}>
+                  <CButton
+                    color="primary"
+                    className="alignRight"
+                    type="submit"
+                    disabled={isLoading}
+                  >
+                    Guardar
+                  </CButton>
+                </CCol>
+              </CRow>
             </CForm>
           </CCardBody>
         </CCard>

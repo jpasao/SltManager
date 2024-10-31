@@ -173,7 +173,7 @@ const TagSearch = () => {
             <CForm noValidate onSubmit={handleSearch}>
               <CCollapse visible={visible}>
                 <CRow xs={{ gutter: 2 }}>
-                  <CCol xs={9}>
+                  <CCol xs={12} md={9}>
                     <CFormInput
                       type="text"
                       id="tagName"
@@ -184,7 +184,7 @@ const TagSearch = () => {
                       placeholder="Filtra las Etiquetas por nombre..."
                     />
                   </CCol>
-                  <CCol xs>
+                  <CCol xs={12} md={3}>
                     <CButton
                       as="input"
                       type="reset"
@@ -225,7 +225,7 @@ const TagSearch = () => {
               <CCallout color="light">No aparece nada con esa búsqueda.</CCallout>
             ) : (
               <>
-                <CTable striped bordered columns={columns} items={items} />
+                <CTable striped bordered columns={columns} items={items} responsive="sm" />
                 {pager}
               </>
             )}
