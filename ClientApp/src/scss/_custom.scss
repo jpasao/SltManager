@@ -41,6 +41,25 @@
 .cursorPointer:not(.active):not(.disabled) {
   cursor: pointer;
 }
+// page logo
+.textLogo {
+  background: linear-gradient(
+    to right, 
+    var(--cui-primary), 
+    var(--cui-secondary)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+  font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+  font-weight: bold;
+  font-size: x-large;
+  cursor: default;
+}
+.sidebar-header {
+  padding: 0 var(--cui-sidebar-padding-x);
+}
+// end page logo
 // react-select
 .filter {
   &__value-container {
