@@ -1,5 +1,9 @@
 -- MySQL dump 10.19  Distrib 10.3.39-MariaDB, for debian-linux-gnu (x86_64)
 --
+-- Host: localhost    Database: dbstl
+-- ------------------------------------------------------
+-- Server version	10.3.39-MariaDB-0+deb10u2
+
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
@@ -12,6 +16,24 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `collections`
+--
+
+DROP TABLE IF EXISTS `collections`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `collections` (
+  `IdCollection` int(11) NOT NULL AUTO_INCREMENT,
+  `IdPatreon` int(11) NOT NULL,
+  `CollectionName` varchar(200) DEFAULT NULL,
+  PRIMARY KEY (`IdCollection`),
+  UNIQUE KEY `collections_unique` (`CollectionName`),
+  KEY `collections_patreons_FK` (`IdPatreon`),
+  CONSTRAINT `collections_patreons_FK` FOREIGN KEY (`IdPatreon`) REFERENCES `patreons` (`IdPatreon`) ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `models`
 --
 
@@ -21,16 +43,16 @@ DROP TABLE IF EXISTS `models`;
 CREATE TABLE `models` (
   `IdModel` int(11) NOT NULL AUTO_INCREMENT,
   `IdPatreon` int(11) NOT NULL,
-  `ModelName` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `IdCollection` int(11) DEFAULT NULL,
+  `ModelName` varchar(200) DEFAULT NULL,
   `Year` smallint(6) DEFAULT NULL,
   `Month` tinyint(4) DEFAULT NULL,
   `Path` varchar(200) DEFAULT NULL,
-  `CreatedAt` datetime DEFAULT current_timestamp(),
-  `UpdatedAt` datetime DEFAULT NULL,
   PRIMARY KEY (`IdModel`),
+  UNIQUE KEY `models_unique` (`ModelName`),
   KEY `models_FK` (`IdPatreon`),
   CONSTRAINT `models_FK` FOREIGN KEY (`idpatreon`) REFERENCES `patreons` (`idpatreon`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -47,7 +69,7 @@ CREATE TABLE `modeltags` (
   KEY `modeltags_model_FK` (`IdModel`),
   CONSTRAINT `modeltags_model_FK` FOREIGN KEY (`idmodel`) REFERENCES `models` (`idmodel`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `modeltags_tag_FK` FOREIGN KEY (`idtag`) REFERENCES `tags` (`idtag`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -59,11 +81,10 @@ DROP TABLE IF EXISTS `patreons`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `patreons` (
   `IdPatreon` int(11) NOT NULL AUTO_INCREMENT,
-  `PatreonName` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `CreatedAt` datetime DEFAULT current_timestamp(),
-  `UpdatedAt` datetime DEFAULT NULL,
-  PRIMARY KEY (`IdPatreon`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
+  `PatreonName` varchar(200) DEFAULT NULL,
+  PRIMARY KEY (`IdPatreon`),
+  UNIQUE KEY `patreons_unique` (`PatreonName`)
+) ENGINE=InnoDB AUTO_INCREMENT=68 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -80,7 +101,7 @@ CREATE TABLE `photos` (
   PRIMARY KEY (`IdPhoto`),
   KEY `photos_models_FK` (`IdModel`),
   CONSTRAINT `photos_models_FK` FOREIGN KEY (`IdModel`) REFERENCES `models` (`IdModel`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=110 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -92,11 +113,11 @@ DROP TABLE IF EXISTS `tags`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `tags` (
   `IdTag` int(11) NOT NULL AUTO_INCREMENT,
-  `TagName` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `CreatedAt` datetime DEFAULT current_timestamp(),
-  `UpdatedAt` datetime DEFAULT NULL,
-  PRIMARY KEY (`IdTag`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
+  `TagName` varchar(200) DEFAULT NULL,
+  PRIMARY KEY (`IdTag`),
+  UNIQUE KEY `tags_unique` (`TagName`)
+) ENGINE=InnoDB AUTO_INCREMENT=57 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
@@ -111,3 +132,5 @@ ALTER DATABASE `dbstl` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2024-10-31  9:47:12

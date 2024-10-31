@@ -70,8 +70,13 @@ public class CollectionRepository : ICollectionRepository
 
             return Response.BuildResponse(response);
         }
+        catch (UniqueException ex)
+        {
+            return Response.BuildError(ex, 400);
+        }
         catch (Exception ex)
         {
+            if (ex.Message.Contains("Duplicate")) throw new UniqueException("Colecciones");
             return Response.BuildError(ex);
         }
     }

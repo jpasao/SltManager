@@ -70,12 +70,20 @@ const PatreonSave = () => {
       if (editingPatreon) {
         await updatePatreon(patreon).then(
           () => navigateTo(routeNames.patreons.search),
-          (reason) => console.error('the reason:', reason),
+          (error) =>
+            resultToast(
+              `Hubo un problema al guardar el Patreon '${patreon.PatreonName}': ${error}`,
+              'danger',
+            ),
         )
       } else {
         await createPatreon(patreon).then(
           () => navigateTo(routeNames.patreons.search),
-          (error) => resultToast(`Hubo un problema al guardar el Patreon: ${error}`, 'danger'),
+          (error) =>
+            resultToast(
+              `Hubo un problema al guardar el Patreon '${patreon.PatreonName}': ${error}`,
+              'danger',
+            ),
         )
       }
     }

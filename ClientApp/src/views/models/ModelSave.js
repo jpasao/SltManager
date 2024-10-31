@@ -322,7 +322,11 @@ const ModelSave = () => {
     if (editingModel.current) {
       await updateModel(model).then(
         () => resultToast('El modelo se ha guardado correctamente', 'primary'),
-        (error) => resultToast(`Hubo un problema al guardar el modelo: ${error}`, 'danger'),
+        (error) =>
+          resultToast(
+            `Hubo un problema al guardar el modelo '${model.ModelName}': ${error}`,
+            'danger',
+          ),
       )
     } else {
       await createModel(model).then(
@@ -332,7 +336,11 @@ const ModelSave = () => {
           setValidated(false)
           resultToast('El modelo se ha creado correctamente', 'primary')
         },
-        (error) => resultToast(`Hubo un problema al crear el modelo: ${error}`, 'danger'),
+        (error) =>
+          resultToast(
+            `Hubo un problema al crear el modelo '${model.ModelName}': ${error}`,
+            'danger',
+          ),
       )
     }
   }

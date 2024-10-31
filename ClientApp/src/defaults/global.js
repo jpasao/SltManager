@@ -39,7 +39,7 @@ const getItemsPerPage = async () => {
 }
 const returnResponse = (response) => {
   if (response instanceof Error || response?.StatusCode !== 200) {
-    return response?.message || 'An error occurred'
+    throw new Error(response?.info?.message || 'An error occurred')
   }
   return response.Value
 }

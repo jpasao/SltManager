@@ -48,8 +48,13 @@ public class TagRepository : ITagRepository
 
             return Response.BuildResponse(response);
         }
+        catch (UniqueException ex)
+        {
+            return Response.BuildError(ex, 400);
+        }
         catch (Exception ex)
         {
+            if (ex.Message.Contains("Duplicate")) throw new UniqueException("Etiquetas");
             return Response.BuildError(ex);
         }
     }
@@ -87,6 +92,6 @@ public class TagRepository : ITagRepository
         catch (Exception ex)
         {
             return Response.BuildError(ex);
-        }
+        }        
     }
 }

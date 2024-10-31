@@ -70,7 +70,7 @@ const TagSave = () => {
           () => navigateTo(routeNames.tags.search),
           (error) =>
             resultToast(
-              `Hubo un problema al guardar la etiqueta '${tag.TagName}: ${error}'`,
+              `Hubo un problema al guardar la etiqueta '${tag.TagName}': ${error}`,
               'danger',
             ),
         )
@@ -79,7 +79,7 @@ const TagSave = () => {
           () => navigateTo(routeNames.tags.search),
           (error) =>
             resultToast(
-              `Hubo un problema al guardar la etiqueta '${tag.TagName}: ${error}'`,
+              `Hubo un problema al guardar la etiqueta '${tag.TagName}': ${error}`,
               'danger',
             ),
         )

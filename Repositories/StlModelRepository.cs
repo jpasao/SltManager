@@ -131,8 +131,13 @@ public class StlModelRepository : IStlModelRepository
 
             return Response.BuildResponse(response);
         }
+        catch (UniqueException ex)
+        {
+            return Response.BuildError(ex, 400);
+        }
         catch (Exception ex)
         {
+            if (ex.Message.Contains("Duplicate")) throw new UniqueException("Modelos");
             return Response.BuildError(ex);
         }
     }

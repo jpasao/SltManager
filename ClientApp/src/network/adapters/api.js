@@ -57,9 +57,13 @@ const buildResponse = async (fetchResponse) => {
     code: code,
   }
   if (code === 500) {
-    errorObj.message = 'An internal server error occurred'
-  }
-  if (code >= 400) {
+    const errorData = await fetchResponse.text()
+    if (errorData.includes('UniqueException')) {
+      errorObj.message = errorData.slice(errorData.indexOf(' ') + 1, errorData.indexOf('\n'))
+    } else {
+      errorObj.message = 'An internal server error occurred'
+    }
+  } else {
     let message = ''
     if (response === undefined) response = await fetchResponse?.json()
     Object.keys(response.errors).forEach((m) => (message += `${response.errors[m]} `))
