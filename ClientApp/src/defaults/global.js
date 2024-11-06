@@ -4,7 +4,15 @@ const actionColumns = [
     key: 'actions',
     label: 'Acciones',
     _props: { colSpan: 2, scope: 'colgroup' },
-    _style: { width: '10%' },
+    _style: { width: '7%' },
+  },
+]
+const extendedActionColumns = [
+  {
+    key: 'actions',
+    label: 'Acciones',
+    _props: { colSpan: 2, scope: 'colgroup' },
+    _style: { width: '12.4%' },
   },
 ]
 const pages = ['models', 'patreons', 'tags', 'collections']
@@ -46,6 +54,7 @@ const returnResponse = (response) => {
 
 export {
   actionColumns,
+  extendedActionColumns,
   routeNames,
   invalidSelectMessage,
   serverUrl,

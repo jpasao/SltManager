@@ -12,14 +12,12 @@ import {
   CToaster,
 } from '@coreui/react'
 import { useCreatePatreon, useUpdatePatreon, useGetDependencies } from '../../network/hooks/patreon'
-import { defaultCollection } from '../../defaults/collection'
 import { defaultPatreon } from '../../defaults/patreon'
 import { routeNames } from '../../defaults/global'
 import Toast from '../../components/ToastComponent'
 import DependencyComponent from '../../components/DependencyComponent'
 
 const PatreonSave = () => {
-  const patreonCollection = defaultCollection
   const location = useLocation()
   const navigateTo = useNavigate()
   const editingPatreon = location.state !== null

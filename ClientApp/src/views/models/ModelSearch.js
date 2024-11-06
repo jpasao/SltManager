@@ -35,6 +35,7 @@ import {
   cilPencil,
   cilTrash,
   cilFeaturedPlaylist,
+  cibAtAndT,
 } from '@coreui/icons'
 import ModalWindow from '../../components/ModalComponent'
 import { useGetModels, useDeleteModel, useGetPhotos } from '../../network/hooks/model'
@@ -46,7 +47,7 @@ import { defaultPatreon } from '../../defaults/patreon'
 import { defaultCollection } from '../../defaults/collection'
 import { defaultTag } from '../../defaults/tag'
 import {
-  actionColumns,
+  extendedActionColumns,
   routeNames,
   itemsPerTable,
   getPagedItems,
@@ -216,6 +217,11 @@ const ModelSearch = () => {
       toggleDetailModal(true)
     })
   }
+  const handleOpenStl = async (model) => {
+    navigator.clipboard
+      .writeText(model.Path)
+      .then(() => resultToast('Ruta copiada al portapapeles', 'primary'))
+  }
   const toggleDetailModal = (visible) => {
     setVisibleDetailModal(visible)
   }
@@ -291,7 +297,7 @@ const ModelSearch = () => {
       label: 'Mes',
       _props: { scope: 'col' },
     },
-    ...actionColumns,
+    ...extendedActionColumns,
   ]
 
   const items = pagedItems?.map((model) => {
@@ -306,6 +312,9 @@ const ModelSearch = () => {
         <>
           <CButton color="info" variant="ghost" size="sm" onClick={() => handleView(model)}>
             <CIcon icon={cilFeaturedPlaylist} />
+          </CButton>
+          <CButton color="success" variant="ghost" size="sm" onClick={() => handleOpenStl(model)}>
+            <CIcon icon={cibAtAndT} />
           </CButton>
           <CButton color="warning" variant="ghost" size="sm" onClick={() => handleEdit(model)}>
             <CIcon icon={cilPencil} />
