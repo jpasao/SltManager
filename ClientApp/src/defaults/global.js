@@ -46,10 +46,10 @@ const getItemsPerPage = async () => {
   return await items
 }
 const returnResponse = (response) => {
-  if (response instanceof Error || response?.StatusCode !== 200) {
+  if (response instanceof Error) {
     throw new Error(response?.info?.message || 'An error occurred')
   }
-  return response.Value
+  return response
 }
 
 export {

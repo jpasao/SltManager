@@ -3,19 +3,19 @@ using stl.Models;
 using stl.Code;
 using stl.Repositories;
 using stl.Interfaces;
+using System.Text.Json.Serialization;
 
 var policyName = "AllowAll";
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Host.ConfigureLogging(logging =>
-{
-    logging.ClearProviders();
-    logging.AddConsole();
-});
+builder.Logging.ClearProviders().AddConsole();
 builder.Services
     .AddControllersWithViews()
-    .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = null);
+    .AddJsonOptions(options => {
+        options.JsonSerializerOptions.Converters.Add(new JsonException());
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    });
 builder.Services.AddSingleton<CollectionRepository>();
 builder.Services.AddTransient<ICollectionRepository, CollectionRepository>();
 builder.Services.AddSingleton<PatreonRepository>();

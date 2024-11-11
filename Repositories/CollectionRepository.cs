@@ -1,7 +1,7 @@
 using System.Data;
 using Dapper;
 using Microsoft.Extensions.Options;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using stl.Code;
 using stl.Interfaces;
 using stl.Models;
