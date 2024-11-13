@@ -58,6 +58,7 @@ import NoImage from '/no-image.png'
 import Toast from '../../components/ToastComponent'
 import SignalRConnector from '../../network/adapters/signalr'
 import Pager from '../../components/PagerComponent'
+import { StlViewer } from 'react-stl-viewer'
 
 const ModelSearch = () => {
   let deleteObj = structuredClone(defaultDelete)
@@ -81,6 +82,7 @@ const ModelSearch = () => {
   const [visible, setVisible] = useState(true)
   const [visibleDeleteModal, setVisibleDeleteModal] = useState(false)
   const [visibleDetailModal, setVisibleDetailModal] = useState(false)
+  const [visibleStlModal, setVisibleStlModal] = useState(false)
   const [name, setName] = useState('')
   const [patreon, setPatreon] = useState(0)
   const [collection, setCollection] = useState(0)
@@ -91,7 +93,10 @@ const ModelSearch = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [toast, setToast] = useState(0)
+  const [stlUrl, setStlUrl] = useState('')
+  const [stlName, setStlName] = useState('')
   const toaster = useRef()
+  const renderStlRef = useRef()
   const { connection } = SignalRConnector()
   const resultToast = (message, color) =>
     setToast(<Toast message={message} color={color} push={toast} refProp={toaster} />)
@@ -217,13 +222,49 @@ const ModelSearch = () => {
       toggleDetailModal(true)
     })
   }
+  const copyToClipboard = (textToCopy) => {
+    const cb = navigator.clipboard
+    if (cb) {
+      navigator.clipboard.writeText(textToCopy).then(
+        () => resultToast(`Se ha copiado '${textToCopy}' al portapapeles`, 'primary'),
+        () => resultToast('No se pudo copiar la ruta', 'warning'),
+      )
+    } else {
+      const textarea = document.createElement('textarea')
+      textarea.textContent = textToCopy
+      textarea.style.position = 'fixed'
+      document.body.appendChild(textarea)
+      textarea.select()
+      try {
+        resultToast(`Se ha copiado '${textToCopy}' al portapapeles`, 'primary')
+        return document.execCommand('copy')
+      } catch (ex) {
+        resultToast('No se pudo copiar la ruta', 'warning')
+        return prompt('Hay que copiarla a mano: Ctrl+C y Enter', textToCopy)
+      } finally {
+        document.body.removeChild(textarea)
+      }
+    }
+  }
   const handleOpenStl = async (model) => {
-    navigator.clipboard
-      .writeText(model.Path)
-      .then(() => resultToast('Ruta copiada al portapapeles', 'primary'))
+    copyToClipboard(model.Path)
+    if (!renderStlRef || !renderStlRef.current) return
+    renderStlRef.current.click()
+  }
+  const onChangeStl = async (e) => {
+    const files = e.target.files
+    if (!files) return
+    const file = files[0]
+    setStlName(file.name)
+    const stl = URL.createObjectURL(file)
+    setStlUrl(stl)
+    toggleStlModal(true)
   }
   const toggleDetailModal = (visible) => {
     setVisibleDetailModal(visible)
+  }
+  const toggleStlModal = (visible) => {
+    setVisibleStlModal(visible)
   }
   const setImage = (image) => {
     return image === null ? NoImage : `data:image/jpeg;base64,${image}`
@@ -590,6 +631,29 @@ const ModelSearch = () => {
           </CButton>
         </CModalFooter>
       </CModal>
+      <CModal
+        size="lg"
+        visible={visibleStlModal}
+        onClose={() => toggleStlModal(false)}
+        aria-labelledby="stl"
+      >
+        <CModalHeader>
+          <CModalTitle id="stl">{stlName}</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <StlViewer
+            orbitControls
+            shadows
+            url={stlUrl}
+            style={{ top: 0, left: 0, width: '100%', height: '600px' }}
+          />
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="primary" onClick={() => toggleStlModal(false)}>
+            Cerrar
+          </CButton>
+        </CModalFooter>
+      </CModal>
       <ModalWindow
         data={deleteData}
         handleDelete={deleteElement}
@@ -597,6 +661,7 @@ const ModelSearch = () => {
         closeDeleteModal={toggleDeleteModal}
       />
       <CToaster className="p-3" placement="top-end" push={toast} ref={toaster} />
+      <input ref={renderStlRef} type="file" accept=".stl" hidden onChange={onChangeStl} />
     </CRow>
   )
 
