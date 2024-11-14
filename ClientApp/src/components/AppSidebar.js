@@ -1,7 +1,14 @@
 import React from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-
-import { CButton, CCloseButton, CSidebar, CSidebarBrand, CSidebarHeader } from '@coreui/react'
+import { NavLink } from 'react-router-dom'
+import {
+  CButton,
+  CCloseButton,
+  CSidebar,
+  CSidebarBrand,
+  CSidebarHeader,
+  CNavLink,
+} from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { AppSidebarNav } from './AppSidebarNav'
 
@@ -27,12 +34,14 @@ const AppSidebar = () => {
       }}
     >
       <CSidebarHeader className="border-bottom">
-        <CSidebarBrand to="/">
-          <CIcon customClassName="sidebar-brand-full" icon={stlLogo} height={32} />
-          <CButton color="dark" className="textLogo">
-            STL Manager
-          </CButton>
-        </CSidebarBrand>
+        <CNavLink to="/" as={NavLink}>
+          <CSidebarBrand to="/">
+            <CIcon customClassName="sidebar-brand-full" icon={stlLogo} height={32} />
+            <CButton color="dark" className="textLogo">
+              STL Manager
+            </CButton>
+          </CSidebarBrand>
+        </CNavLink>
         <CCloseButton
           className="d-lg-none"
           dark

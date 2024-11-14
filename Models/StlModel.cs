@@ -28,7 +28,10 @@ public class StlModel
 
   public List<Photo> Image { get; set; }
 
-  public string? Path { get; set; } 
+  public string? Path { get; set; }
+
+  [JsonIgnore]
+  public DateTime Created { get; }
 }
 
 public struct PathObj
