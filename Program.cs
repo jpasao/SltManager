@@ -48,6 +48,7 @@ if (!app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
     app.UseCors(policyName);
 }
+var url = app.Environment.IsDevelopment() ? "http://*:5007" : "http://*:5006";
 
 app.Use((context, next) =>
 {
@@ -57,7 +58,7 @@ app.Use((context, next) =>
 app.UseStaticFiles();
 app.UseRouting();
 app.UseCors(policyName);
-app.Urls.Add("http://*:5006");
+app.Urls.Add(url);
 
 
 app.MapControllerRoute(

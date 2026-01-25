@@ -27,6 +27,7 @@
     "@coreui/react-chartjs": "^3.0.0",
     "@coreui/utils": "^2.0.2",
     "@popperjs/core": "^2.11.8",
+    "@reduxjs/toolkit": "^2.5.1",
     "chart.js": "^4.4.3",
     "classnames": "^2.5.1",
     "core-js": "^3.37.1",
@@ -37,7 +38,7 @@
     "react-router-dom": "^6.23.1",
     "react-select": "^5.8.1",
     "react-signalr": "^0.2.24",
-    "react-stl-viewer": "^2.5.0",
+    "react-stl-viewer": "^2.2.2",
     "redux": "5.0.1",
     "simplebar-react": "^3.2.5",
     "stl-viewer-react": "^1.0.3"
